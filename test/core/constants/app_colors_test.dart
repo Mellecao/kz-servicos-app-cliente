@@ -23,5 +23,17 @@ void main() {
     test('white should be Colors.white', () {
       expect(AppColors.white, Colors.white);
     });
+
+    test('meshSlide1 should have 4 colors', () {
+      expect(AppColors.meshSlide1.length, 4);
+    });
+
+    test('meshSlide2 should have 4 colors', () {
+      expect(AppColors.meshSlide2.length, 4);
+    });
+
+    test('meshSlide3 should have 4 colors', () {
+      expect(AppColors.meshSlide3.length, 4);
+    });
   });
 }
