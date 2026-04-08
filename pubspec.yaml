@@ -60,6 +60,7 @@ flutter:
   assets:
     - assets/images/
     - assets/animations/
+    - public/assets/
 
   fonts:
     - family: OutfitBlack

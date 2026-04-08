@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
-import 'package:kz_servicos_app/core/widgets/dust_particles.dart';
 import 'package:kz_servicos_app/core/widgets/liquid_glass_card.dart';
-import 'package:kz_servicos_app/core/widgets/mesh_gradient_background.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -12,15 +10,11 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: MeshGradientBackground(colors: AppColors.meshSlide3),
-          ),
-          Positioned.fill(
-            child: DustParticles(
-              color: AppColors.textPrimary,
-              scrollOffset: 0,
-            ),
+          Image.asset(
+            'public/assets/Foto login.png',
+            fit: BoxFit.cover,
           ),
           SafeArea(
             child: Center(
