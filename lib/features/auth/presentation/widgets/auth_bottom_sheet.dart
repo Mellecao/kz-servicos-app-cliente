@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/core/utils/phone_input_formatter.dart';
@@ -299,7 +300,10 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).pop();
+          context.go('/trip');
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.highlight,
           foregroundColor: const Color(0xFF1A1A1A),

@@ -1,75 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kz_servicos_app/core/widgets/liquid_glass_card.dart';
 import 'package:kz_servicos_app/features/auth/presentation/pages/login_page.dart';
 
 void main() {
   group('LoginPage', () {
-    testWidgets('should display email field', (tester) async {
+    testWidgets('should display "Login" button', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginPage()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.widgetWithText(TextField, 'E-mail'), findsOneWidget);
+      expect(find.text('Login'), findsOneWidget);
     });
 
-    testWidgets('should display password field', (tester) async {
+    testWidgets('should display "Cadastre-se" button', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginPage()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.widgetWithText(TextField, 'Senha'), findsOneWidget);
+      expect(find.text('Cadastre-se'), findsOneWidget);
     });
 
-    testWidgets('should display "Entrar" button', (tester) async {
+    testWidgets('should have two main action buttons', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginPage()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Entrar'), findsOneWidget);
+      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(find.byType(OutlinedButton), findsOneWidget);
     });
 
-    testWidgets('should display "Criar conta" link', (tester) async {
+    testWidgets('should contain background image', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginPage()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Criar conta'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
     });
 
-    testWidgets('password field should obscure text', (tester) async {
+    testWidgets('should use Stack layout', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginPage()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      final passwordField = tester.widget<TextField>(
-        find.widgetWithText(TextField, 'Senha'),
-      );
-      expect(passwordField.obscureText, isTrue);
+      expect(find.byType(Stack), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('should contain LiquidGlassCard', (tester) async {
+    testWidgets('login button should open bottom sheet', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginPage()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(LiquidGlassCard), findsOneWidget);
+      await tester.tap(find.text('Login'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Acesse sua conta'), findsOneWidget);
     });
 
-    testWidgets('should contain BackdropFilter for glass effect',
+    testWidgets('register button should open bottom sheet', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: LoginPage()),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.text('Cadastre-se'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Crie sua conta'), findsOneWidget);
+    });
+
+    testWidgets('login bottom sheet should have email and password fields',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: LoginPage()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(BackdropFilter), findsOneWidget);
+      await tester.tap(find.text('Login'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('E-mail'), findsOneWidget);
+      expect(find.text('Senha'), findsOneWidget);
     });
   });
 }

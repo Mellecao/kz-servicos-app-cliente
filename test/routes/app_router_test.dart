@@ -3,11 +3,11 @@ import 'package:kz_servicos_app/routes/app_router.dart';
 
 void main() {
   group('AppRouter', () {
-    test('should have onboarding as initial route', () {
+    test('should have splash as initial route', () {
       final router = AppRouter.router;
       expect(
         router.routeInformationProvider.value.uri.path,
-        '/onboarding',
+        '/splash',
       );
     });
 
