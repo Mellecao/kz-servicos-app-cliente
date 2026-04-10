@@ -1,3 +1,8 @@
+---
+mode: agent
+description: "UI/UX Pro Max - Design intelligence for building professional UI/UX. Use /ui-ux-pro-max for design system generation, style recommendations, and UI implementation."
+---
+
 # ui-ux-pro-max
 
 Comprehensive design guide for web and mobile applications. Contains 67 styles, 96 color palettes, 57 font pairings, 99 UX guidelines, and 25 chart types across 13 technology stacks. Searchable database with priority-based recommendations.

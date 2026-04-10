@@ -5,21 +5,23 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/features/trip/data/models/place_prediction.dart';
 import 'package:kz_servicos_app/features/trip/data/services/places_autocomplete_service.dart';
 
-class TripAddressSearchBar extends StatefulWidget {
+class PickupSearchBar extends StatefulWidget {
   final LatLng? location;
-  final ValueChanged<PlacePrediction>? onAddressSelected;
+  final ValueChanged<PlacePrediction> onAddressSelected;
+  final VoidCallback onSelectOnMap;
 
-  const TripAddressSearchBar({
+  const PickupSearchBar({
     super.key,
     this.location,
-    this.onAddressSelected,
+    required this.onAddressSelected,
+    required this.onSelectOnMap,
   });
 
   @override
-  State<TripAddressSearchBar> createState() => _TripAddressSearchBarState();
+  State<PickupSearchBar> createState() => PickupSearchBarState();
 }
 
-class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
+class PickupSearchBarState extends State<PickupSearchBar> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final PlacesAutocompleteService _service = PlacesAutocompleteService();
@@ -27,6 +29,11 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
   List<PlacePrediction> _suggestions = [];
   Timer? _debounce;
   bool _isLoading = false;
+
+  void setAddress(String address) {
+    _controller.text = address;
+    setState(() => _suggestions = []);
+  }
 
   @override
   void initState() {
@@ -75,15 +82,7 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
     _controller.text = prediction.description;
     setState(() => _suggestions = []);
     _focusNode.unfocus();
-    widget.onAddressSelected?.call(prediction);
-  }
-
-  void _onClear() {
-    _controller.clear();
-    setState(() {
-      _suggestions = [];
-      _isLoading = false;
-    });
+    widget.onAddressSelected(prediction);
   }
 
   Widget _buildHighlightedText(PlacePrediction prediction) {
@@ -104,9 +103,7 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
 
     for (final match in matches) {
       if (match.offset > cursor) {
-        spans.add(
-          TextSpan(text: text.substring(cursor, match.offset)),
-        );
+        spans.add(TextSpan(text: text.substring(cursor, match.offset)));
       }
       final end = (match.offset + match.length).clamp(0, text.length);
       spans.add(
@@ -139,13 +136,13 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildSearchInput(),
-        _buildSuggestionsAccordion(),
+        _buildInput(),
+        _buildSuggestions(),
       ],
     );
   }
 
-  Widget _buildSearchInput() {
+  Widget _buildInput() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -170,14 +167,15 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
         focusNode: _focusNode,
         style: const TextStyle(fontSize: 15, color: Colors.black87),
         decoration: InputDecoration(
-          hintText: 'Para aonde vamos hoje?',
+          hintText: 'Qual será o local de embarque?',
           hintStyle: TextStyle(
             fontSize: 15,
             color: Colors.black.withValues(alpha: 0.30),
           ),
           prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: Colors.black45,
+            Icons.trip_origin_rounded,
+            color: Colors.green,
+            size: 20,
           ),
           suffixIcon: _controller.text.isNotEmpty
               ? IconButton(
@@ -186,7 +184,13 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
                     color: Colors.black38,
                     size: 20,
                   ),
-                  onPressed: _onClear,
+                  onPressed: () {
+                    _controller.clear();
+                    setState(() {
+                      _suggestions = [];
+                      _isLoading = false;
+                    });
+                  },
                 )
               : null,
           border: InputBorder.none,
@@ -199,7 +203,7 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
     );
   }
 
-  Widget _buildSuggestionsAccordion() {
+  Widget _buildSuggestions() {
     return AnimatedSize(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeInOut,
@@ -243,50 +247,64 @@ class _TripAddressSearchBarState extends State<TripAddressSearchBar> {
             : ListView.separated(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
-                itemCount: _suggestions.length,
+                itemCount: _suggestions.length + 1,
                 separatorBuilder: (_, i) => const Divider(
                   height: 1,
                   indent: 52,
                   endIndent: 16,
                 ),
-                itemBuilder: (ctx, i) =>
-                    _SuggestionItem(
-                      prediction: _suggestions[i],
-                      highlightedText: _buildHighlightedText(_suggestions[i]),
-                      onTap: () => _onSuggestionTap(_suggestions[i]),
+                itemBuilder: (ctx, i) {
+                  if (i == _suggestions.length) {
+                    return _buildMapOption();
+                  }
+                  final pred = _suggestions[i];
+                  return InkWell(
+                    onTap: () => _onSuggestionTap(pred),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 13,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            color: Colors.black38,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: _buildHighlightedText(pred)),
+                        ],
+                      ),
                     ),
+                  );
+                },
               ),
       ),
     );
   }
-}
 
-class _SuggestionItem extends StatelessWidget {
-  final PlacePrediction prediction;
-  final Widget highlightedText;
-  final VoidCallback onTap;
-
-  const _SuggestionItem({
-    required this.prediction,
-    required this.highlightedText,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildMapOption() {
     return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      onTap: () {
+        _focusNode.unfocus();
+        setState(() => _suggestions = []);
+        widget.onSelectOnMap();
+      },
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
           children: [
-            const Icon(
-              Icons.location_on_outlined,
-              color: Colors.black38,
-              size: 20,
+            Icon(Icons.map_rounded, color: Colors.blue, size: 20),
+            SizedBox(width: 12),
+            Text(
+              'Selecionar local no mapa',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.blue,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(width: 12),
-            Expanded(child: highlightedText),
           ],
         ),
       ),

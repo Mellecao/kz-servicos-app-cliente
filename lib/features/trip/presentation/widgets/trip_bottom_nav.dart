@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
 class TripBottomNav extends StatelessWidget {
@@ -12,58 +11,51 @@ class TripBottomNav extends StatelessWidget {
     required this.onItemSelected,
   });
 
+  static const _items = [
+    (icon: Icons.local_taxi_rounded, label: 'Viagens'),
+    (icon: Icons.work_rounded, label: 'Serviços'),
+    (icon: Icons.person_rounded, label: 'Perfil'),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(40),
         color: Colors.white,
-        borderRadius: BorderRadius.circular(60),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Colors.black.withValues(alpha: 0.10),
             blurRadius: 24,
             offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _NavItem(
-            svgPath: 'assets/images/SVG/car_front_view.svg',
-            label: 'Viagens',
-            isSelected: selectedIndex == 0,
-            onTap: () => onItemSelected(0),
-          ),
-          const SizedBox(width: 6),
-          _NavItem(
-            svgPath: 'assets/images/SVG/briefcase.svg',
-            label: 'Serviços',
-            isSelected: selectedIndex == 1,
-            onTap: () => onItemSelected(1),
-          ),
-          const SizedBox(width: 6),
-          _NavItem(
-            svgPath: 'assets/images/SVG/avatar.svg',
-            label: 'Perfil',
-            isSelected: selectedIndex == 2,
-            onTap: () => onItemSelected(2),
-          ),
-        ],
+        children: List.generate(_items.length, (i) {
+          return Expanded(
+            child: _NavItem(
+              icon: _items[i].icon,
+              label: _items[i].label,
+              isSelected: selectedIndex == i,
+              onTap: () => onItemSelected(i),
+            ),
+          );
+        }),
       ),
     );
   }
 }
 
 class _NavItem extends StatelessWidget {
-  final String svgPath;
+  final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.svgPath,
+    required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -74,47 +66,62 @@ class _NavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOut,
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isSelected
-                  ? AppColors.highlight
-                  : Colors.transparent,
-            ),
-            child: Center(
-              child: Opacity(
-                opacity: isSelected ? 1.0 : 0.45,
-                child: SvgPicture.asset(
-                  svgPath,
-                  width: 26,
-                  height: 26,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.black,
-                    BlendMode.srcIn,
-                  ),
+      child: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: isSelected ? 18 : 14,
+            vertical: isSelected ? 10 : 8,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: isSelected
+                ? AppColors.highlight.withValues(alpha: 0.85)
+                : Colors.transparent,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.highlight.withValues(alpha: 0.40),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedScale(
+                scale: isSelected ? 1.15 : 0.9,
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.black45,
+                  size: 26,
                 ),
               ),
-            ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: isSelected
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
           ),
-          const SizedBox(height: 3),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 220),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight:
-                  isSelected ? FontWeight.w700 : FontWeight.w400,
-              color: isSelected ? AppColors.highlight : Colors.black45,
-            ),
-            child: Text(label),
-          ),
-        ],
+        ),
       ),
     );
   }
