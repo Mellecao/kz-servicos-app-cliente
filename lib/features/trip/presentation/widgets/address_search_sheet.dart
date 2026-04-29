@@ -147,7 +147,15 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
 
     if (_activeField == 'destination') {
       widget.onDestinationSelected(prediction);
-      // If pickup is still default, auto-set current location as pickup
+      // Restore pickup to "Minha localização atual" if it has been left empty
+      // (e.g. user tapped the field once but didn't pick anything).
+      if (_pickupController.text.trim().isEmpty) {
+        _pickupController.removeListener(_onPickupChanged);
+        _pickupController.text = 'Minha localização atual';
+        _pickupController.addListener(_onPickupChanged);
+        _pickupIsDefault = true;
+      }
+      // Auto-set parent pickup state to current location while default.
       if (_pickupIsDefault && widget.currentLocation != null) {
         widget.onPickupSelected(
           PlacePrediction(
@@ -156,9 +164,9 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
             matchedSubstrings: [],
           ),
         );
-      } else {
-        _pickupFocus.requestFocus();
       }
+      // Dismiss keyboard; do not auto-focus the pickup field.
+      FocusScope.of(context).unfocus();
     } else if (_activeField == 'pickup') {
       widget.onPickupSelected(prediction);
     } else if (_activeField.startsWith('stop_')) {

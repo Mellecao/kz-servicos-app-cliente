@@ -15,6 +15,7 @@ import 'package:kz_servicos_app/features/other_services/presentation/cubit/servi
 import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/trip/domain/usecases/create_trip.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/pending_confirmations_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
 import 'package:kz_servicos_app/routes/app_router.dart';
@@ -61,6 +62,11 @@ class KzServicosApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => ScheduledTripsCubit(
+            repository: TripRepositoryImpl(client: supabaseClient),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => PendingConfirmationsCubit(
             repository: TripRepositoryImpl(client: supabaseClient),
           ),
         ),
