@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_user.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_scheduled_trip.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/profile/data/models/mock_trip_history.dart';
+import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_state.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/profile_header.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/quick_actions_grid.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/settings_list.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -18,20 +23,73 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _user = MockUser.sample;
-  final _scheduledTrips = MockScheduledTrip.samples;
   final _tripHistory = MockTripHistory.samples;
   final int _selectedNavIndex = 2;
   final ImagePicker _imagePicker = ImagePicker();
   String? _avatarPath;
 
-  void _onNavTap(int index) {
-    if (index == 0) {
-      context.go('/trip');
-    } else if (index == 1) {
-      // Services not available on this branch
+  @override
+  void initState() {
+    super.initState();
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthSuccess) {
+      final userId = authState.user.id;
+      context.read<ProfileCubit>().loadStats(userId);
+      context.read<ScheduledTripsCubit>().load(userId);
     }
-    // index == 2 → already on profile, do nothing
+  }
+
+  void _onNavTap(int index) {
+    switch (index) {
+      case 0:
+        context.go('/trip');
+      case 1:
+        context.go('/services');
+    }
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Sair da conta',
+          style: TextStyle(
+            fontFamily: 'OutfitBlack',
+            fontSize: 18,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: const Text(
+          'Tem certeza que deseja sair?',
+          style: TextStyle(
+            fontFamily: 'QuasimodoSemiBold',
+            fontSize: 15,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Sair',
+              style: TextStyle(color: Color(0xFFD32F2F)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await context.read<AuthCubit>().signOut();
+    }
   }
 
   Future<void> _onEditPhoto() async {
@@ -133,6 +191,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthCubit>().state;
+    final user = authState is AuthSuccess ? authState.user : null;
+    final userName = user?.fullName ?? '';
+    final userEmail = user?.email ?? '';
+    final userPhone = user?.phone;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -144,22 +208,47 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 SizedBox(height: MediaQuery.of(context).padding.top + 8),
                 ProfileHeader(
-                  name: _user.name,
-                  email: _user.email,
-                  profileCompletion: _user.profileCompletion,
-                  hasNotifications: _user.unreadMessages > 0,
+                  name: userName,
+                  email: userEmail,
+                  phone: userPhone,
+                  profileCompletion: 0.0,
+                  hasNotifications: false,
                   onBackTap: () => context.go('/trip'),
                   onEditPhotoTap: _onEditPhoto,
                   avatarPath: _avatarPath,
+                  avatarUrl: user?.avatarUrl,
                 ),
                 const SizedBox(height: 24),
-                QuickActionsGrid(
-                  completedTrips: _user.completedTrips,
-                  requestedServices: _user.requestedServices,
-                  unreadMessages: _user.unreadMessages,
-                  onTripsTap: () => context.push('/trip-history'),
-                  onMessagesTap: () => context.push('/messages'),
-                  onPaymentsTap: () => context.push('/wallet'),
+                BlocBuilder<ProfileCubit, ProfileState>(
+                  builder: (context, profileState) {
+                    final stats = profileState is ProfileLoaded
+                        ? profileState.stats
+                        : null;
+                    return BlocBuilder<ScheduledTripsCubit,
+                        ScheduledTripsState>(
+                      builder: (context, tripsState) {
+                        final scheduledCount =
+                            tripsState is ScheduledTripsLoaded
+                                ? tripsState.trips.length
+                                : 0;
+                        return QuickActionsGrid(
+                          completedTrips: scheduledCount,
+                          completedTripsLabel: 'agendadas',
+                          requestedServices:
+                              stats?.requestedServices ?? 0,
+                          unreadMessages: stats?.unreadMessages ?? 0,
+                          onTripsTap: () =>
+                              context.push('/scheduled-trips'),
+                          onMessagesTap: () =>
+                              context.push('/messages'),
+                          onPaymentsTap: () =>
+                              context.push('/wallet'),
+                          onServicesTap: () =>
+                              context.push('/services'),
+                        );
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 Padding(
@@ -176,17 +265,55 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      SettingsList(
-                        scheduledTrips: _scheduledTrips,
-                        tripHistory: _tripHistory,
-                        onSecurityTap: () =>
-                            context.push('/security-settings'),
-                        onViewAllScheduledTap: () =>
-                            context.push('/scheduled-trips'),
-                        onHistoryTripTap: () =>
-                            context.push('/trip-history'),
+                      BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+                        builder: (context, tripsState) {
+                          return SettingsList(
+                            scheduledTrips: tripsState is ScheduledTripsLoaded
+                                ? tripsState.trips
+                                : [],
+                            tripHistory: _tripHistory,
+                            onSecurityTap: () =>
+                                context.push('/security-settings'),
+                            onViewAllScheduledTap: () =>
+                                context.push('/scheduled-trips'),
+                            onHistoryTripTap: () =>
+                                context.push('/trip-history'),
+                          );
+                        },
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: TextButton.icon(
+                      onPressed: () => _confirmLogout(context),
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        size: 20,
+                        color: Color(0xFFD32F2F),
+                      ),
+                      label: const Text(
+                        'Sair da conta',
+                        style: TextStyle(
+                          fontFamily: 'QuasimodoSemiBold',
+                          fontSize: 15,
+                          color: Color(0xFFD32F2F),
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: const BorderSide(
+                            color: Color(0x33D32F2F),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_scheduled_trip.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/map_route_preview.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
 
 class ScheduledTripWidget extends StatelessWidget {
-  final MockScheduledTrip trip;
+  final ScheduledTrip trip;
   final VoidCallback? onDetailsTap;
   final bool showMapPreview;
 
@@ -67,7 +67,7 @@ class ScheduledTripWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 _BottomRow(
-                  formattedDate: _formatDate(trip.scheduledAt),
+                  formattedDate: _formatDate(trip.scheduledDatetime),
                   driverName: trip.driverName,
                   onDetailsTap: onDetailsTap,
                 ),
@@ -88,25 +88,40 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bgColor, textColor, label) = switch (status) {
-      'confirmed' => (
+      'scheduled' => (
         const Color(0xFFE8F5E9),
         const Color(0xFF4CAF50),
-        'Confirmada',
+        'Agendada',
       ),
-      'pending' => (
+      'open' => (
         const Color(0xFFFFF3E0),
         const Color(0xFFFF9800),
         'Pendente',
       ),
-      'waiting_driver' => (
+      'under_review' => (
+        const Color(0xFFFFF3E0),
+        const Color(0xFFFF9800),
+        'Em análise',
+      ),
+      'searching_drivers' => (
         const Color(0xFFE3F2FD),
         const Color(0xFF2261FE),
-        'Aguardando',
+        'Buscando motorista',
+      ),
+      'awaiting_client_confirmation' || 'awaiting_driver_confirmation' => (
+        const Color(0xFFE3F2FD),
+        const Color(0xFF2261FE),
+        'Aguardando confirmação',
+      ),
+      'started' => (
+        const Color(0xFFE8F5E9),
+        const Color(0xFF4CAF50),
+        'Em andamento',
       ),
       _ => (
         const Color(0xFFF5F5F5),
         const Color(0xFF9E9E9E),
-        'Desconhecido',
+        status,
       ),
     };
 
@@ -235,12 +250,12 @@ class _DashedLinePainter extends CustomPainter {
 
 class _BottomRow extends StatelessWidget {
   final String formattedDate;
-  final String driverName;
+  final String? driverName;
   final VoidCallback? onDetailsTap;
 
   const _BottomRow({
     required this.formattedDate,
-    required this.driverName,
+    this.driverName,
     this.onDetailsTap,
   });
 
@@ -270,6 +285,7 @@ class _BottomRow extends StatelessWidget {
                   ),
                 ],
               ),
+              if (driverName != null) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -281,7 +297,7 @@ class _BottomRow extends StatelessWidget {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      driverName,
+                      driverName!,
                       style: TextStyle(
                         fontFamily: 'QuasimodoSemiBold',
                         fontSize: 12,
@@ -293,6 +309,7 @@ class _BottomRow extends StatelessWidget {
                   ),
                 ],
               ),
+              ],
             ],
           ),
         ),

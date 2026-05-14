@@ -388,8 +388,12 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
       // TODO: implement forgot password
       Navigator.of(context).pop();
     } else {
-      // TODO: implement register
-      Navigator.of(context).pop();
+      context.read<AuthCubit>().signUp(
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
+            password: _passwordController.text,
+          );
     }
   }
 

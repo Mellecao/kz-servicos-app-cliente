@@ -33,3 +33,7 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+class AuthEmailConfirmationSent extends AuthState {
+  const AuthEmailConfirmationSent();
+}

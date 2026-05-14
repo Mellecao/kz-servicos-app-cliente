@@ -10,9 +10,9 @@ import 'package:kz_servicos_app/features/other_services/presentation/widgets/pro
 import 'package:kz_servicos_app/features/other_services/presentation/widgets/request_info_card.dart';
 
 class RequestDetailPage extends StatefulWidget {
-  final String requestId;
+  final ServiceRequest request;
 
-  const RequestDetailPage({super.key, required this.requestId});
+  const RequestDetailPage({super.key, required this.request});
 
   @override
   State<RequestDetailPage> createState() => _RequestDetailPageState();
@@ -27,9 +27,7 @@ class _RequestDetailPageState extends State<RequestDetailPage>
   @override
   void initState() {
     super.initState();
-    _request = ServiceRequest.mockRequests.firstWhere(
-      (r) => r.id == widget.requestId,
-    );
+    _request = widget.request;
     _currentStatus = _request.status;
     _pulseController = AnimationController(
       vsync: this,

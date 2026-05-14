@@ -73,6 +73,7 @@ Cada estado deve ter sua própria representação visual e lógica de transiçã
 
 ## Regras Importantes
 - **Usar Supabase como backend** (Auth, Database, Realtime, Storage) — consultar skill `kz-database` para schema e endpoints
+- **Emails transacionais via N8N** — Supabase NÃO envia emails (confirmação, reset, etc.). A integração com N8N será feita separadamente. No Supabase, a confirmação de email está desabilitada.
 - Em testes unitários, usar mocks/fakes dos repositórios — nunca chamar Supabase real em testes
 - Validação de endereços obrigatória
 - Notificações push para mudanças de status

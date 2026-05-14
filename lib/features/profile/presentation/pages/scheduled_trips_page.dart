@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_scheduled_trip.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/scheduled_trip_widget.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 
 class ScheduledTripsPage extends StatelessWidget {
@@ -10,8 +14,6 @@ class ScheduledTripsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trips = MockScheduledTrip.samples;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -22,9 +24,32 @@ class ScheduledTripsPage extends StatelessWidget {
               _buildHeader(context),
               const SizedBox(height: 16),
               Expanded(
-                child: trips.isEmpty
-                    ? _buildEmptyState()
-                    : _buildTripsList(trips),
+                child: BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+                  builder: (context, state) {
+                    if (state is ScheduledTripsLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    if (state is ScheduledTripsError) {
+                      return Center(
+                        child: Text(
+                          'Erro ao carregar viagens',
+                          style: TextStyle(
+                            fontFamily: 'QuasimodoSemiBold',
+                            fontSize: 16,
+                            color: Colors.red.shade400,
+                          ),
+                        ),
+                      );
+                    }
+                    final trips = state is ScheduledTripsLoaded
+                        ? state.trips
+                        : <ScheduledTrip>[];
+                    if (trips.isEmpty) return _buildEmptyState();
+                    return _buildTripsList(trips);
+                  },
+                ),
               ),
             ],
           ),
@@ -103,15 +128,17 @@ class ScheduledTripsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTripsList(List<MockScheduledTrip> trips) {
+  Widget _buildTripsList(List<ScheduledTrip> trips) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
       itemCount: trips.length,
       separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
+        final trip = trips[index];
         return ScheduledTripWidget(
-          trip: trips[index],
+          trip: trip,
           showMapPreview: true,
+          onDetailsTap: () => TripDetailsSheet.show(context, trip),
         );
       },
     );

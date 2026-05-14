@@ -37,6 +37,54 @@ class ServiceRequest {
     required this.createdAt,
   });
 
+  Map<String, dynamic> toInsertJson({required String clientId}) {
+    return {
+      'client_id': clientId,
+      'service_category_id': categoryId,
+      'description': '$problem\n\n$details',
+      'service_date': (scheduledDate ?? DateTime.now()).toIso8601String(),
+      if (address != null) 'observations': address,
+    };
+  }
+
+  factory ServiceRequest.fromJson(Map<String, dynamic> json) {
+    final description = json['description'] as String? ?? '';
+    final parts = description.split('\n\n');
+    final problem = parts.isNotEmpty ? parts.first : description;
+    final details = parts.length > 1 ? parts.sublist(1).join('\n\n') : '';
+    final categoryData = json['service_categories'] as Map<String, dynamic>?;
+
+    return ServiceRequest(
+      id: json['id'] as String,
+      categoryId: json['service_category_id'] as String,
+      categoryName: categoryData?['name'] as String? ?? '',
+      problem: problem,
+      details: details,
+      mediaPaths: const [],
+      address: json['observations'] as String?,
+      urgency: json['service_date'] != null
+          ? UrgencyType.scheduled
+          : UrgencyType.now,
+      scheduledDate: json['service_date'] != null
+          ? DateTime.tryParse(json['service_date'] as String)
+          : null,
+      status: _mapStatus(json['status'] as String? ?? 'open'),
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+
+  static ServiceRequestStatus _mapStatus(String dbStatus) {
+    return switch (dbStatus) {
+      'open' || 'under_review' => ServiceRequestStatus.searchingProvider,
+      'searching_provider' => ServiceRequestStatus.searchingProvider,
+      'assigned' => ServiceRequestStatus.selectProvider,
+      'in_progress' => ServiceRequestStatus.awaitingConfirmation,
+      'finished' => ServiceRequestStatus.scheduled,
+      'cancelled' || 'review_rejected' => ServiceRequestStatus.searchingProvider,
+      _ => ServiceRequestStatus.searchingProvider,
+    };
+  }
+
   static final List<ServiceRequest> mockRequests = [
     ServiceRequest(
       id: 'sr_1',

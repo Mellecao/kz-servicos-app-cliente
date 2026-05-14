@@ -3,6 +3,7 @@ import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
 class QuickActionsGrid extends StatelessWidget {
   final int completedTrips;
+  final String completedTripsLabel;
   final int requestedServices;
   final int unreadMessages;
   final VoidCallback? onTripsTap;
@@ -13,6 +14,7 @@ class QuickActionsGrid extends StatelessWidget {
   const QuickActionsGrid({
     super.key,
     required this.completedTrips,
+    this.completedTripsLabel = 'realizadas',
     required this.requestedServices,
     required this.unreadMessages,
     this.onTripsTap,
@@ -33,7 +35,7 @@ class QuickActionsGrid extends StatelessWidget {
                 child: _QuickActionCard(
                   icon: Icons.local_taxi_rounded,
                   title: 'Viagens',
-                  value: '$completedTrips realizadas',
+                  value: '$completedTrips $completedTripsLabel',
                   onTap: onTripsTap,
                 ),
               ),

@@ -26,12 +26,8 @@ class RequestInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final category = kServiceCategories.cast<ServiceCategory?>().firstWhere(
-          (c) => c!.id == request.categoryId,
-          orElse: () => null,
-        );
-    final categoryColor = category?.color ?? Colors.grey;
-    final categoryIcon = category?.icon ?? Icons.miscellaneous_services;
+    final categoryColor = ServiceCategory.colorForSlug(request.categoryId);
+    final categoryIcon = ServiceCategory.iconForSlug(request.categoryId);
 
     return Container(
       padding: const EdgeInsets.all(16),

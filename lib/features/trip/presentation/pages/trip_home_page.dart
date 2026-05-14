@@ -5,23 +5,39 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/constants/map_styles.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/trip/data/models/place_prediction.dart';
 import 'package:kz_servicos_app/features/trip/data/services/directions_service.dart';
+import 'package:kz_servicos_app/features/trip/data/services/geocoding_address_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/geocoding_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/place_details_service.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_data.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_request.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/pending_confirmations_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/pending_confirmations_state.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_state.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_with_candidates.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/address_search_sheet.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_candidate_popup.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_details_panel.dart';
 import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_confirming_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_en_route_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_selection_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/searching_driver_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_trip_card.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -53,11 +69,14 @@ class _TripHomePageState extends State<TripHomePage>
   final Completer<GoogleMapController> _mapController = Completer();
   final DirectionsService _directionsService = DirectionsService();
   final GeocodingService _geocodingService = GeocodingService();
+  final GeocodingAddressService _geocodingAddressService =
+      GeocodingAddressService();
   final PlaceDetailsService _placeDetailsService = PlaceDetailsService();
 
   GoogleMapController? _controller;
   Marker? _userMarker;
   bool _isSearchActive = false;
+  int _currentTripIndex = 0;
 
   AnimationController? _pulseController;
   List<LatLng> _routePoints = [];
@@ -81,6 +100,10 @@ class _TripHomePageState extends State<TripHomePage>
   bool _panelMinimized = false;
   List<LatLng> _stops = [];
 
+  // Place IDs from address selection
+  String? _pickupPlaceId;
+  String? _destinationPlaceId;
+
   // Driver flow state
   MockDriver? _selectedDriver;
   Timer? _searchingTimer;
@@ -94,6 +117,7 @@ class _TripHomePageState extends State<TripHomePage>
   String? _pickupAddress;
   String? _destinationAddress;
   BitmapDescriptor? _cachedBlueDotIcon;
+  bool _isCreatingTrip = false;
 
   @override
   void initState() {
@@ -102,6 +126,70 @@ class _TripHomePageState extends State<TripHomePage>
       const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
     );
     _requestLocationAndInit();
+    _loadScheduledTrips();
+    _loadPendingConfirmations();
+  }
+
+  void _loadScheduledTrips() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthSuccess) {
+      context.read<ScheduledTripsCubit>().load(authState.user.id);
+    }
+  }
+
+  void _loadPendingConfirmations() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is AuthSuccess) {
+      context.read<PendingConfirmationsCubit>().load(authState.user.id);
+    }
+  }
+
+  bool _isProcessingConfirmations = false;
+
+  Future<void> _processConfirmationQueue(
+    List<TripWithCandidates> queue,
+  ) async {
+    if (_isProcessingConfirmations) return;
+    _isProcessingConfirmations = true;
+    try {
+      for (final item in queue) {
+        if (!mounted) break;
+        final pickedCandidate =
+            await DriverCandidatePopup.show(context, item);
+        if (!mounted) break;
+        if (pickedCandidate == null) continue;
+        try {
+          await context.read<PendingConfirmationsCubit>().acceptCandidate(
+                tripId: pickedCandidate.tripId,
+                driverProfileId: pickedCandidate.driverProfileId,
+                vehicleId: pickedCandidate.vehicleId,
+              );
+          if (!mounted) break;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Motorista ${pickedCandidate.driverName} confirmado!',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _loadScheduledTrips();
+        } on Exception catch (e) {
+          if (!mounted) break;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao confirmar motorista: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } finally {
+      _isProcessingConfirmations = false;
+      if (mounted) {
+        context.read<PendingConfirmationsCubit>().clear();
+      }
+    }
   }
 
   void _openSearch() {
@@ -159,6 +247,7 @@ class _TripHomePageState extends State<TripHomePage>
   // ──── Address selection ────
 
   Future<void> _onDestinationSelected(PlacePrediction prediction) async {
+    _destinationPlaceId = prediction.placeId;
     final latLng = await _placeDetailsService.getPlaceLatLng(
       prediction.placeId,
     );
@@ -188,6 +277,7 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Future<void> _onPickupSelected(PlacePrediction prediction) async {
+    _pickupPlaceId = prediction.placeId;
     LatLng? latLng;
     if (prediction.placeId == '_current_location_' &&
         _currentLocation != null) {
@@ -642,6 +732,16 @@ class _TripHomePageState extends State<TripHomePage>
     super.dispose();
   }
 
+  void _goToNextTrip(int total) {
+    if (total <= 1) return;
+    setState(() => _currentTripIndex = (_currentTripIndex + 1) % total);
+  }
+
+  void _goToPrevTrip(int total) {
+    if (total <= 1) return;
+    setState(() => _currentTripIndex = ((_currentTripIndex - 1) + total) % total);
+  }
+
   Future<void> _fitBounds() async {
     if (_pickupLatLng == null || _destinationLatLng == null) return;
     final controller = await _mapController.future;
@@ -673,12 +773,80 @@ class _TripHomePageState extends State<TripHomePage>
     );
   }
 
-  void _onPassengerDetailsConfirmed() {
-    setState(() => _step = TripFlowStep.searchingDriver);
-    _searchingTimer = Timer(
-      const Duration(seconds: 10),
-      _onSearchingComplete,
-    );
+  Future<void> _onPassengerDetailsConfirmed(PassengerFormData formData) async {
+    if (_pickupLatLng == null || _destinationLatLng == null) return;
+    if (_isCreatingTrip) return;
+
+    // Get current user ID before async gaps
+    final authState = context.read<AuthCubit>().state;
+    if (authState is! AuthSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sessão expirada. Faça login novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final userId = authState.user.id;
+    final tripCubit = context.read<TripCreationCubit>();
+
+    setState(() {
+      _isCreatingTrip = true;
+      _step = TripFlowStep.searchingDriver;
+    });
+
+    try {
+      // Resolve structured addresses
+      final pickupAddress = _pickupPlaceId != null &&
+              _pickupPlaceId != '_current_location_'
+          ? await _geocodingAddressService
+              .getAddressFromPlaceId(_pickupPlaceId!)
+          : await _geocodingAddressService
+              .reverseGeocodeToAddress(_pickupLatLng!);
+
+      final dropoffAddress = _destinationPlaceId != null
+          ? await _geocodingAddressService
+              .getAddressFromPlaceId(_destinationPlaceId!)
+          : await _geocodingAddressService
+              .reverseGeocodeToAddress(_destinationLatLng!);
+
+      if (pickupAddress == null || dropoffAddress == null) {
+        throw Exception('Could not resolve addresses');
+      }
+
+      // Build trip request
+      final tripRequest = TripRequest(
+        clientId: userId,
+        pickupAddress: pickupAddress,
+        dropoffAddress: dropoffAddress,
+        scheduledDatetime: formData.scheduledDatetime,
+        passengerCount: formData.adults,
+        childrenDescription: formData.childrenDescription,
+        luggageDescription: formData.luggageDescription,
+        observations: formData.observations,
+        paymentMethod: 'pix',
+      );
+
+      // Submit via cubit
+      if (!mounted) return;
+      await tripCubit.submit(tripRequest);
+    } catch (e) {
+      debugPrint('[KZ] Trip creation error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao criar viagem. Tente novamente.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _step = TripFlowStep.passengerDetails);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCreatingTrip = false);
+      }
+    }
   }
 
   void _onDetailsBack() {
@@ -703,8 +871,12 @@ class _TripHomePageState extends State<TripHomePage>
       _driverEtaMinutes = 0;
       _pickupAddress = null;
       _destinationAddress = null;
+      _pickupPlaceId = null;
+      _destinationPlaceId = null;
+      _isCreatingTrip = false;
       _isSearchActive = true;
     });
+    context.read<TripCreationCubit>().reset();
   }
 
   void _onSearchingComplete() {
@@ -905,7 +1077,11 @@ class _TripHomePageState extends State<TripHomePage>
       _driverEtaMinutes = 0;
       _pickupAddress = null;
       _destinationAddress = null;
+      _pickupPlaceId = null;
+      _destinationPlaceId = null;
+      _isCreatingTrip = false;
     });
+    context.read<TripCreationCubit>().reset();
   }
 
   Future<void> _fitDriverBounds(LatLng driverPos) async {
@@ -930,7 +1106,46 @@ class _TripHomePageState extends State<TripHomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<TripCreationCubit, TripCreationState>(
+          listener: (context, state) {
+            if (state is TripCreationSuccess) {
+              debugPrint('[KZ] Trip created: ${state.tripId}');
+              _loadScheduledTrips();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Viagem criada com sucesso!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              // Continue the flow — searching for drivers
+              _searchingTimer = Timer(
+                const Duration(seconds: 10),
+                _onSearchingComplete,
+              );
+            } else if (state is TripCreationError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              setState(() => _step = TripFlowStep.passengerDetails);
+            }
+          },
+        ),
+        BlocListener<PendingConfirmationsCubit, PendingConfirmationsState>(
+          listenWhen: (prev, curr) =>
+              curr is PendingConfirmationsLoaded && prev is! PendingConfirmationsLoaded,
+          listener: (context, state) {
+            if (state is PendingConfirmationsLoaded && state.items.isNotEmpty) {
+              _processConfirmationQueue(state.items);
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
@@ -938,6 +1153,7 @@ class _TripHomePageState extends State<TripHomePage>
           if (_step == TripFlowStep.idle && !_isSearchActive)
             _buildNotificationButton(),
           _buildFakeSearchBar(),
+          _buildScheduledTripsList(),
           _buildBottomNav(),
           _buildMapTapOverlay(),
           if (!_isSearchActive) _buildBottomPanel(),
@@ -950,6 +1166,7 @@ class _TripHomePageState extends State<TripHomePage>
           _buildSearchOverlay(),
         ],
       ),
+    ),
     );
   }
 
@@ -1221,12 +1438,13 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Widget _buildNotificationButton() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 12, right: 20),
-        child: const Align(
-          alignment: Alignment.topRight,
-          child: TripTopBar(),
+    return Positioned(
+      top: 0,
+      right: 0,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 12, right: 20),
+          child: const TripTopBar(),
         ),
       ),
     );
@@ -1237,39 +1455,41 @@ class _TripHomePageState extends State<TripHomePage>
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeInOut,
-      bottom: show ? 148 : -80,
+      bottom: show ? 108 : -80,
       left: 20,
       right: 20,
-      child: GestureDetector(
-        onTap: _openSearch,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 18,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.search_rounded, color: Colors.black45),
-              const SizedBox(width: 12),
-              Text(
-                'Para onde vamos hoje?',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.black.withValues(alpha: 0.30),
+      child: PointerInterceptor(
+        child: GestureDetector(
+          onTap: _openSearch,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 18,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.search_rounded, color: Colors.black45),
+                const SizedBox(width: 12),
+                Text(
+                  'Para onde vamos hoje?',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.black.withValues(alpha: 0.30),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1310,6 +1530,52 @@ class _TripHomePageState extends State<TripHomePage>
                 )
               : const SizedBox.shrink(key: ValueKey('no_search')),
         ),
+      ),
+    );
+  }
+
+  Widget _buildScheduledTripsList() {
+    final show = _step == TripFlowStep.idle && !_isSearchActive;
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      bottom: show ? 180 : -240,
+      left: 0,
+      right: 0,
+      child: BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+        builder: (context, state) {
+          if (state is! ScheduledTripsLoaded || state.trips.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          final total = state.trips.length;
+          final index = _currentTripIndex.clamp(0, total - 1);
+          final trip = state.trips[index];
+          return PointerInterceptor(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragEnd: (details) {
+                final v = details.primaryVelocity ?? 0;
+                if (v.abs() < 80) return;
+                if (v < 0) { _goToNextTrip(total); } else { _goToPrevTrip(total); }
+              },
+              child: SizedBox(
+                height: 185,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: ScheduledTripCard(
+                    key: ValueKey(index),
+                    trip: trip,
+                    onTap: () => TripDetailsSheet.show(context, trip),
+                    onPrevTap: () => _goToPrevTrip(total),
+                    onNextTap: () => _goToNextTrip(total),
+                    currentIndex: index,
+                    totalCount: total,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

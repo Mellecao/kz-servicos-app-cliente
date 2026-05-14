@@ -5,13 +5,6 @@ class TripTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: _buildChatButton(),
-    );
-  }
-
-  Widget _buildChatButton() {
     return Container(
       width: 48,
       height: 48,

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_scheduled_trip.dart';
 import 'package:kz_servicos_app/features/profile/data/models/mock_trip_history.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/scheduled_trip_widget.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/trip_history_card.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
 
 class SettingsList extends StatefulWidget {
-  final List<MockScheduledTrip> scheduledTrips;
+  final List<ScheduledTrip> scheduledTrips;
   final List<MockTripHistory> tripHistory;
   final VoidCallback? onScheduledTripDetailsTap;
   final VoidCallback? onSecurityTap;
@@ -32,10 +33,10 @@ class _SettingsListState extends State<SettingsList> {
 
   bool get _hasPendingTrips => widget.scheduledTrips.isNotEmpty;
 
-  MockScheduledTrip? get _nextTrip {
+  ScheduledTrip? get _nextTrip {
     if (widget.scheduledTrips.isEmpty) return null;
     final sorted = [...widget.scheduledTrips]
-      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+      ..sort((a, b) => a.scheduledDatetime.compareTo(b.scheduledDatetime));
     return sorted.first;
   }
 
@@ -86,9 +87,9 @@ class _SettingsListState extends State<SettingsList> {
             ),
           ],
           _SettingsItem(
-            icon: Icons.shield_rounded,
+            icon: Icons.edit_rounded,
             iconBackgroundColor: AppColors.highlight,
-            label: 'Configurações de Segurança',
+            label: 'Edição de Perfil',
             isExpanded: false,
             isExpandable: false,
             onTap: () => _onItemTap(1),
@@ -199,7 +200,7 @@ class _Divider extends StatelessWidget {
 }
 
 class _SingleScheduledTripContent extends StatelessWidget {
-  final MockScheduledTrip trip;
+  final ScheduledTrip trip;
   final VoidCallback? onDetailsTap;
   final VoidCallback? onViewAllTap;
 
@@ -216,10 +217,12 @@ class _SingleScheduledTripContent extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ScheduledTripWidget(
-            trip: trip,
-            onDetailsTap: onDetailsTap,
-            showMapPreview: true,
+          Builder(
+            builder: (context) => ScheduledTripWidget(
+              trip: trip,
+              onDetailsTap: () => TripDetailsSheet.show(context, trip),
+              showMapPreview: true,
+            ),
           ),
           const SizedBox(height: 8),
           Align(

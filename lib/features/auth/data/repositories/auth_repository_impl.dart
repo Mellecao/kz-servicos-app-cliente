@@ -22,11 +22,39 @@ class AuthRepositoryImpl implements AuthRepository {
       fullName: data['full_name'] as String,
       email: data['email'] as String,
       role: data['role'] as String,
+      phone: data['phone'] as String?,
+      avatarUrl: data['avatar_url'] as String?,
     );
   }
 
   @override
   Future<void> signOut() async {
     await _dataSource.signOut();
+  }
+
+  @override
+  Future<AppUser?> signUpWithEmail({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phone,
+  }) async {
+    final data = await _dataSource.signUpWithEmail(
+      email: email,
+      password: password,
+      fullName: fullName,
+      phone: phone,
+    );
+
+    if (data == null) return null;
+
+    return AppUser(
+      id: data['id'] as String,
+      fullName: data['full_name'] as String,
+      email: data['email'] as String,
+      role: data['role'] as String,
+      phone: data['phone'] as String?,
+      avatarUrl: data['avatar_url'] as String?,
+    );
   }
 }

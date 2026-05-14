@@ -55,6 +55,19 @@ extension type JsGeocoderResult._(JSObject _) implements JSObject {
   @JS('formatted_address')
   external String get formattedAddress;
   external JsGeometry get geometry;
+  @JS('place_id')
+  external String? get placeId;
+  @JS('address_components')
+  external JSArray<JsAddressComponent>? get addressComponents;
+}
+
+@JS()
+extension type JsAddressComponent._(JSObject _) implements JSObject {
+  @JS('long_name')
+  external String get longName;
+  @JS('short_name')
+  external String get shortName;
+  external JSArray<JSString> get types;
 }
 
 @JS()

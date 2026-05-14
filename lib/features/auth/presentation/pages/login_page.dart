@@ -28,6 +28,19 @@ class LoginPage extends StatelessWidget {
               ),
             );
           context.go('/trip');
+        } else if (state is AuthEmailConfirmationSent) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'Conta criada! Verifique seu e-mail para confirmar.',
+                ),
+                backgroundColor: Colors.green[700],
+                duration: const Duration(seconds: 4),
+              ),
+            );
         }
         // Errors are handled inline in the bottom sheet
       },

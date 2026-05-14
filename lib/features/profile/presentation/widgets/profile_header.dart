@@ -8,23 +8,27 @@ import 'package:kz_servicos_app/core/constants/app_colors.dart';
 class ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
+  final String? phone;
   final double profileCompletion;
   final bool hasNotifications;
   final VoidCallback? onBackTap;
   final VoidCallback? onNotificationsTap;
   final VoidCallback? onEditPhotoTap;
   final String? avatarPath;
+  final String? avatarUrl;
 
   const ProfileHeader({
     super.key,
     required this.name,
     required this.email,
+    this.phone,
     this.profileCompletion = 0.0,
     this.hasNotifications = false,
     this.onBackTap,
     this.onNotificationsTap,
     this.onEditPhotoTap,
     this.avatarPath,
+    this.avatarUrl,
   });
 
   String get _initials {
@@ -61,6 +65,17 @@ class ProfileHeader extends StatelessWidget {
               color: Color(0xFF999999),
             ),
           ),
+          if (phone != null && phone!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              phone!,
+              style: const TextStyle(
+                fontFamily: 'QuasimodoSemiBold',
+                fontSize: 14,
+                color: Color(0xFF999999),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -172,9 +187,12 @@ class ProfileHeader extends StatelessWidget {
   }
 
   ImageProvider? get _avatarImage {
-    if (avatarPath == null) return null;
-    if (kIsWeb) return NetworkImage(avatarPath!);
-    return FileImage(File(avatarPath!));
+    if (avatarPath != null) {
+      if (kIsWeb) return NetworkImage(avatarPath!);
+      return FileImage(File(avatarPath!));
+    }
+    if (avatarUrl != null) return NetworkImage(avatarUrl!);
+    return null;
   }
 }
 

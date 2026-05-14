@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_data.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/quantity_selector.dart';
 
 class PassengerDetailsPanel extends StatefulWidget {
-  final VoidCallback onConfirm;
+  final ValueChanged<PassengerFormData> onConfirm;
   final VoidCallback onBack;
   final bool isMinimized;
   final VoidCallback onRestore;
@@ -499,12 +500,40 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
     );
   }
 
+  void _handleConfirm() {
+    final date = _isToday ? DateTime.now() : _pickupDate!;
+    final time = _isNow ? TimeOfDay.now() : _pickupTime!;
+    final scheduledDatetime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    widget.onConfirm(PassengerFormData(
+      adults: _adults,
+      scheduledDatetime: scheduledDatetime,
+      hasChildren: _hasChildren,
+      childrenDescription: _hasChildren
+          ? _childrenDescriptionController.text.trim()
+          : null,
+      hasLuggage: _hasLuggage,
+      luggageDescription: _hasLuggage
+          ? _luggageController.text.trim()
+          : null,
+      observations: _observationController.text.trim().isEmpty
+          ? null
+          : _observationController.text.trim(),
+    ));
+  }
+
   Widget _buildConfirmButton() {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _isValid ? widget.onConfirm : null,
+        onPressed: _isValid ? _handleConfirm : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.highlight,
           disabledBackgroundColor: Colors.grey.shade300,
