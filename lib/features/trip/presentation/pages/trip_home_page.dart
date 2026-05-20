@@ -914,15 +914,18 @@ class _TripHomePageState extends State<TripHomePage>
     final driverArrivedAt = record['driver_arrived_at'];
     final startedAt = record['started_at'];
     final status = record['status'] as String?;
+    // Capture step before any setState so the second conditional block
+    // evaluates the original step, not a value that may have just changed.
+    final currentStep = _step;
 
-    if (startedAt != null && _step != TripFlowStep.tripStarted) {
+    if (startedAt != null && currentStep != TripFlowStep.tripStarted) {
       setState(() => _step = TripFlowStep.tripStarted);
       _enterInTripMapView();
-    } else if (driverArrivedAt != null && _step == TripFlowStep.driverEnRoute) {
+    } else if (driverArrivedAt != null && currentStep == TripFlowStep.driverEnRoute) {
       setState(() => _step = TripFlowStep.driverArrived);
     }
 
-    if (status == 'finished' && _step == TripFlowStep.tripStarted) {
+    if (status == 'finished' && currentStep == TripFlowStep.tripStarted) {
       _stopTripTracking();
       setState(() => _step = TripFlowStep.tripSummary);
     }
@@ -1277,11 +1280,11 @@ class _TripHomePageState extends State<TripHomePage>
                   backgroundColor: Colors.green,
                 ),
               );
-              // Continue the flow — searching for drivers
-              _searchingTimer = Timer(
-                const Duration(seconds: 10),
-                _onSearchingComplete,
-              );
+              // Real trip subscription is active — do NOT start the mock
+              // searching flow, as both paths would race to driverEnRoute
+              // and cause duplicate Supabase channels.
+              _searchingTimer?.cancel();
+              _searchingTimer = null;
             } else if (state is TripCreationError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
