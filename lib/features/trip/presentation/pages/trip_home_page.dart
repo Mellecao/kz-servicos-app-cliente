@@ -130,6 +130,7 @@ class _TripHomePageState extends State<TripHomePage>
   LatLng? _liveDriverLocation;
   double _liveDriverHeading = 0;
   String? _activeDriverName;
+  DateTime? _lastDriverRouteUpdate;
 
   @override
   void initState() {
@@ -944,8 +945,13 @@ class _TripHomePageState extends State<TripHomePage>
       _liveDriverHeading = heading;
     });
     _updateDriverMarker();
-    if ((_step == TripFlowStep.driverEnRoute) && _pickupLatLng != null) {
-      _fetchDriverToPickupRoute();
+    if (_step == TripFlowStep.driverEnRoute && _pickupLatLng != null) {
+      final now = DateTime.now();
+      if (_lastDriverRouteUpdate == null ||
+          now.difference(_lastDriverRouteUpdate!).inSeconds >= 15) {
+        _lastDriverRouteUpdate = now;
+        _fetchDriverToPickupRoute();
+      }
     }
   }
 
@@ -1063,6 +1069,7 @@ class _TripHomePageState extends State<TripHomePage>
                 payload.newRecord['driver_profile_id'] as String?;
             if (status == 'started' && driverProfileId != null) {
               _tripChannel?.unsubscribe();
+              _tripChannel = null;
               _fetchDriverNameAndStartTracking(tripId, driverProfileId);
             }
           },

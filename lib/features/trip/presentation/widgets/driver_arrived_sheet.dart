@@ -50,6 +50,8 @@ class DriverArrivedSheet extends StatelessWidget {
                     fontSize: 15,
                     color: AppColors.textPrimary,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
