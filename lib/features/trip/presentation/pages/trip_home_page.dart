@@ -42,6 +42,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_p
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_arrived_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_top_bar.dart';
 
 enum TripFlowStep {
@@ -943,6 +944,37 @@ class _TripHomePageState extends State<TripHomePage>
       _liveDriverHeading = heading;
     });
     _updateDriverMarker();
+    if ((_step == TripFlowStep.driverEnRoute) && _pickupLatLng != null) {
+      _fetchDriverToPickupRoute();
+    }
+  }
+
+  Future<void> _fetchDriverToPickupRoute() async {
+    if (_liveDriverLocation == null || _pickupLatLng == null) return;
+    final points = await _directionsService.fetchRoute(
+      origin: _liveDriverLocation!,
+      destination: _pickupLatLng!,
+    );
+    if (!mounted || points.isEmpty) return;
+    setState(() {
+      _polylines = {
+        ..._polylines.where((p) =>
+            p.polylineId.value != 'driver_route_glow' &&
+            p.polylineId.value != 'driver_route'),
+        Polyline(
+          polylineId: const PolylineId('driver_route_glow'),
+          points: points,
+          color: AppColors.secondary.withValues(alpha: 0.15),
+          width: 10,
+        ),
+        Polyline(
+          polylineId: const PolylineId('driver_route'),
+          points: points,
+          color: AppColors.secondary,
+          width: 4,
+        ),
+      };
+    });
   }
 
   void _updateDriverMarker() {
@@ -963,7 +995,53 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Future<void> _enterInTripMapView() async {
-    // Stub — will be completed in Task 12
+    if (_pickupLatLng == null || _destinationLatLng == null) return;
+
+    // Clear driver-to-pickup route
+    setState(() {
+      _polylines = _polylines.where((p) =>
+          p.polylineId.value != 'driver_route' &&
+          p.polylineId.value != 'driver_route_glow').toSet();
+    });
+
+    // Fetch pickup → destination route
+    final points = await _directionsService.fetchRoute(
+      origin: _pickupLatLng!,
+      destination: _destinationLatLng!,
+    );
+    if (!mounted || points.isEmpty) return;
+
+    setState(() {
+      _routePoints = points;
+      _polylines = {
+        Polyline(
+          polylineId: const PolylineId('route_glow'),
+          points: points,
+          color: AppColors.highlight.withValues(alpha: 0.18),
+          width: 12,
+        ),
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: points,
+          color: AppColors.highlight,
+          width: 5,
+        ),
+      };
+    });
+
+    _startPulseAnimation(points);
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        math.min(_pickupLatLng!.latitude, _destinationLatLng!.latitude),
+        math.min(_pickupLatLng!.longitude, _destinationLatLng!.longitude),
+      ),
+      northeast: LatLng(
+        math.max(_pickupLatLng!.latitude, _destinationLatLng!.latitude),
+        math.max(_pickupLatLng!.longitude, _destinationLatLng!.longitude),
+      ),
+    );
+    _controller?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
   void _subscribeToTripStart(String tripId) {
@@ -1803,31 +1881,29 @@ class _TripHomePageState extends State<TripHomePage>
               )
             : const SizedBox.shrink(key: ValueKey('none'));
       case TripFlowStep.driverEnRoute:
-        return _selectedDriver != null
-            ? DriverEnRoutePanel(
-                key: const ValueKey('driverEnRoute'),
-                driver: _selectedDriver!,
-                etaMinutes: _driverEtaMinutes,
-                isExpanded: _enRoutePanelExpanded,
-                onToggleExpand: () => setState(
-                  () => _enRoutePanelExpanded = !_enRoutePanelExpanded,
-                ),
-              )
-            : const SizedBox.shrink(key: ValueKey('none'));
-      case TripFlowStep.tripStarted:
-        return _selectedDriver != null
-            ? DriverEnRoutePanel(
-                key: const ValueKey('tripStarted'),
-                driver: _selectedDriver!,
-                etaMinutes: 0,
-                isExpanded: _enRoutePanelExpanded,
-                onToggleExpand: () => setState(
-                  () => _enRoutePanelExpanded = !_enRoutePanelExpanded,
-                ),
-              )
-            : const SizedBox.shrink(key: ValueKey('none'));
+        if (_selectedDriver != null) {
+          return DriverEnRoutePanel(
+            key: const ValueKey('driverEnRoute'),
+            driver: _selectedDriver!,
+            etaMinutes: _driverEtaMinutes,
+            isExpanded: _enRoutePanelExpanded,
+            onToggleExpand: () => setState(
+              () => _enRoutePanelExpanded = !_enRoutePanelExpanded,
+            ),
+          );
+        }
+        // Realtime path — no mock driver available
+        return const SizedBox.shrink(key: ValueKey('none'));
       case TripFlowStep.driverArrived:
-        return const SizedBox.shrink(key: ValueKey('driverArrived'));
+        return DriverArrivedSheet(
+          key: const ValueKey('driverArrived'),
+          driverName: _activeDriverName ?? 'Motorista',
+        );
+      case TripFlowStep.tripStarted:
+        return KeyedSubtree(
+          key: const ValueKey('tripStarted'),
+          child: _buildInTripInfoStrip(),
+        );
       case TripFlowStep.tripSummary:
         return TripSummaryPanel(
           key: const ValueKey('tripSummary'),
@@ -1847,6 +1923,49 @@ class _TripHomePageState extends State<TripHomePage>
       default:
         return const SizedBox.shrink(key: ValueKey('none'));
     }
+  }
+
+  Widget _buildInTripInfoStrip() {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 14, 20, bottomPadding + 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: AppColors.highlight,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Em direção a ${_destinationAddress ?? 'destino'}',
+              style: const TextStyle(
+                fontFamily: 'QuasimodoSemiBold',
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSelectLocationButton() {
