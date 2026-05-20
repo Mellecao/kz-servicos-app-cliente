@@ -41,6 +41,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_top_bar.dart';
 
 enum TripFlowStep {
@@ -52,6 +53,7 @@ enum TripFlowStep {
   driverSelection,
   driverConfirming,
   driverEnRoute,
+  driverArrived,
   tripStarted,
   tripSummary,
   tripRating,
@@ -118,6 +120,15 @@ class _TripHomePageState extends State<TripHomePage>
   String? _destinationAddress;
   BitmapDescriptor? _cachedBlueDotIcon;
   bool _isCreatingTrip = false;
+
+  // Realtime in-trip tracking
+  String? _activeTripId;
+  String? _activeDriverProfileId;
+  RealtimeChannel? _tripChannel;
+  RealtimeChannel? _driverLocationChannel;
+  LatLng? _liveDriverLocation;
+  double _liveDriverHeading = 0;
+  String? _activeDriverName;
 
   @override
   void initState() {
@@ -725,6 +736,7 @@ class _TripHomePageState extends State<TripHomePage>
   @override
   void dispose() {
     _stopPulseAnimation();
+    _stopTripTracking();
     _searchingTimer?.cancel();
     _confirmingTimer?.cancel();
     _driverMoveTimer?.cancel();
@@ -847,6 +859,151 @@ class _TripHomePageState extends State<TripHomePage>
         setState(() => _isCreatingTrip = false);
       }
     }
+  }
+
+  // ──── Realtime tracking ────
+
+  void _startTripTracking(String tripId, String driverProfileId, String driverName) {
+    _activeTripId = tripId;
+    _activeDriverProfileId = driverProfileId;
+    _activeDriverName = driverName;
+
+    final supabase = Supabase.instance.client;
+
+    _tripChannel = supabase
+        .channel('trip-$tripId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'trips',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: tripId,
+          ),
+          callback: _onTripUpdate,
+        )
+        .subscribe();
+
+    _driverLocationChannel = supabase
+        .channel('driver-loc-$driverProfileId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'driver_locations',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'driver_profile_id',
+            value: driverProfileId,
+          ),
+          callback: _onDriverLocationUpdate,
+        )
+        .subscribe();
+  }
+
+  void _stopTripTracking() {
+    _tripChannel?.unsubscribe();
+    _driverLocationChannel?.unsubscribe();
+    _tripChannel = null;
+    _driverLocationChannel = null;
+  }
+
+  void _onTripUpdate(PostgresChangePayload payload) {
+    if (!mounted) return;
+    final record = payload.newRecord;
+    final driverArrivedAt = record['driver_arrived_at'];
+    final startedAt = record['started_at'];
+    final status = record['status'] as String?;
+
+    if (startedAt != null && _step != TripFlowStep.tripStarted) {
+      setState(() => _step = TripFlowStep.tripStarted);
+      _enterInTripMapView();
+    } else if (driverArrivedAt != null && _step == TripFlowStep.driverEnRoute) {
+      setState(() => _step = TripFlowStep.driverArrived);
+    }
+
+    if (status == 'finished' && _step == TripFlowStep.tripStarted) {
+      _stopTripTracking();
+      setState(() => _step = TripFlowStep.tripSummary);
+    }
+  }
+
+  void _onDriverLocationUpdate(PostgresChangePayload payload) {
+    if (!mounted) return;
+    final record = payload.newRecord;
+    final lat = (record['latitude'] as num?)?.toDouble();
+    final lng = (record['longitude'] as num?)?.toDouble();
+    final heading = (record['heading'] as num?)?.toDouble() ?? 0.0;
+    if (lat == null || lng == null) return;
+    setState(() {
+      _liveDriverLocation = LatLng(lat, lng);
+      _liveDriverHeading = heading;
+    });
+    _updateDriverMarker();
+  }
+
+  void _updateDriverMarker() {
+    if (_liveDriverLocation == null) return;
+    final driverMarker = Marker(
+      markerId: const MarkerId('live_driver'),
+      position: _liveDriverLocation!,
+      icon: _cachedBlueDotIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      anchor: const Offset(0.5, 0.5),
+      zIndexInt: 10,
+    );
+    setState(() {
+      _markers = {
+        ..._markers.where((m) => m.markerId.value != 'live_driver'),
+        driverMarker,
+      };
+    });
+  }
+
+  Future<void> _enterInTripMapView() async {
+    // Stub — will be completed in Task 12
+  }
+
+  void _subscribeToTripStart(String tripId) {
+    final supabase = Supabase.instance.client;
+    _tripChannel = supabase
+        .channel('trip-start-$tripId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'trips',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: tripId,
+          ),
+          callback: (payload) {
+            final status = payload.newRecord['status'] as String?;
+            final driverProfileId =
+                payload.newRecord['driver_profile_id'] as String?;
+            if (status == 'started' && driverProfileId != null) {
+              _tripChannel?.unsubscribe();
+              _fetchDriverNameAndStartTracking(tripId, driverProfileId);
+            }
+          },
+        )
+        .subscribe();
+  }
+
+  Future<void> _fetchDriverNameAndStartTracking(
+      String tripId, String driverProfileId) async {
+    try {
+      final data = await Supabase.instance.client
+          .from('driver_profiles')
+          .select('provider_profiles(users(full_name))')
+          .eq('id', driverProfileId)
+          .single();
+      final fullName =
+          (data['provider_profiles']?['users']?['full_name'] as String?) ??
+              'Motorista';
+      if (!mounted) return;
+      setState(() => _step = TripFlowStep.driverEnRoute);
+      _startTripTracking(tripId, driverProfileId, fullName);
+    } catch (_) {}
   }
 
   void _onDetailsBack() {
@@ -1113,6 +1270,7 @@ class _TripHomePageState extends State<TripHomePage>
             if (state is TripCreationSuccess) {
               debugPrint('[KZ] Trip created: ${state.tripId}');
               _loadScheduledTrips();
+              _subscribeToTripStart(state.tripId);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Viagem criada com sucesso!'),
@@ -1665,6 +1823,8 @@ class _TripHomePageState extends State<TripHomePage>
                 ),
               )
             : const SizedBox.shrink(key: ValueKey('none'));
+      case TripFlowStep.driverArrived:
+        return const SizedBox.shrink(key: ValueKey('driverArrived'));
       case TripFlowStep.tripSummary:
         return TripSummaryPanel(
           key: const ValueKey('tripSummary'),
