@@ -19,39 +19,30 @@ class TripBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50),
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 24,
-              spreadRadius: 0,
-              offset: const Offset(0, 4),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(40),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: List.generate(_items.length, (i) {
+          return Expanded(
+            child: _NavItem(
+              icon: _items[i].icon,
+              label: _items[i].label,
+              isSelected: selectedIndex == i,
+              onTap: () => onItemSelected(i),
             ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(_items.length * 2 - 1, (i) {
-            if (i.isOdd) return const SizedBox(width: 20);
-            final index = i ~/ 2;
-            return _NavItem(
-              icon: _items[index].icon,
-              label: _items[index].label,
-              isSelected: selectedIndex == index,
-              onTap: () => onItemSelected(index),
-            );
-          }),
-        ),
+          );
+        }),
       ),
     );
   }
@@ -75,45 +66,39 @@ class _NavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isSelected
-              ? AppColors.highlight
-              : Colors.transparent,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
+      child: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+          width: isSelected ? 56 : 44,
+          height: isSelected ? 56 : 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isSelected
+                ? AppColors.highlight.withValues(alpha: 0.85)
+                : Colors.transparent,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.highlight.withValues(alpha: 0.40),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: AnimatedScale(
+              scale: isSelected ? 1.15 : 0.9,
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
               child: Icon(
                 icon,
-                key: ValueKey(isSelected),
-                color: isSelected
-                    ? const Color(0xFF1A1A1A)
-                    : const Color(0xFF8E8E8E),
-                size: 22,
+                color: isSelected ? Colors.white : Colors.black45,
+                size: 24,
               ),
             ),
-            if (isSelected)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: Color(0xFF1A1A1A),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
