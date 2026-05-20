@@ -78,6 +78,19 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthSuccess(user));
   }
 
+  Future<void> restoreSession() async {
+    try {
+      final user = await _repository.getCurrentUser();
+      if (user != null) {
+        emit(AuthSuccess(user));
+      } else {
+        emit(const AuthInitial());
+      }
+    } on Exception {
+      emit(const AuthInitial());
+    }
+  }
+
   Future<void> signUp({
     required String name,
     required String email,

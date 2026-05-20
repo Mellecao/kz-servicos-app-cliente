@@ -13,5 +13,7 @@ abstract class AuthRepository {
     required String phone,
   });
 
+  Future<AppUser?> getCurrentUser();
+
   Future<void> signOut();
 }

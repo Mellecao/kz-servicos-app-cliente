@@ -14,6 +14,8 @@ abstract class AuthRemoteDataSource {
     required String phone,
   });
 
+  Future<Map<String, dynamic>?> getCurrentUser();
+
   Future<void> signOut();
 }
 
@@ -37,6 +39,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw Exception('Falha na autenticação');
     }
 
+    final userData =
+        await _client.from('users').select().eq('id', userId).single();
+    return userData;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    final session = _client.auth.currentSession;
+    if (session == null) return null;
+    final userId = session.user.id;
     final userData =
         await _client.from('users').select().eq('id', userId).single();
     return userData;

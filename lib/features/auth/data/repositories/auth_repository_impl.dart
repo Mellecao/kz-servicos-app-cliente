@@ -28,6 +28,20 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AppUser?> getCurrentUser() async {
+    final data = await _dataSource.getCurrentUser();
+    if (data == null) return null;
+    return AppUser(
+      id: data['id'] as String,
+      fullName: data['full_name'] as String,
+      email: data['email'] as String,
+      role: data['role'] as String,
+      phone: data['phone'] as String?,
+      avatarUrl: data['avatar_url'] as String?,
+    );
+  }
+
+  @override
   Future<void> signOut() async {
     await _dataSource.signOut();
   }
