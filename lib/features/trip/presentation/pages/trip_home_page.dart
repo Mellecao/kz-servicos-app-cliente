@@ -123,6 +123,7 @@ class _TripHomePageState extends State<TripHomePage>
   bool _isCreatingTrip = false;
 
   // Realtime in-trip tracking
+  String? _searchingTripId;
   String? _activeTripId;
   String? _activeDriverProfileId;
   RealtimeChannel? _tripChannel;
@@ -1094,6 +1095,24 @@ class _TripHomePageState extends State<TripHomePage>
     } catch (_) {}
   }
 
+  Future<void> _cancelSearchingTrip() async {
+    final tripId = _searchingTripId;
+    if (tripId != null) {
+      try {
+        await Supabase.instance.client
+            .from('trips')
+            .update({'status': 'cancelled'})
+            .eq('id', tripId);
+      } catch (e) {
+        debugPrint('[KZ] Cancel trip error: $e');
+      }
+    }
+    _tripChannel?.unsubscribe();
+    _tripChannel = null;
+    _searchingTripId = null;
+    _onDetailsBack();
+  }
+
   void _onDetailsBack() {
     _stopPulseAnimation();
     _searchingTimer?.cancel();
@@ -1357,6 +1376,7 @@ class _TripHomePageState extends State<TripHomePage>
           listener: (context, state) {
             if (state is TripCreationSuccess) {
               debugPrint('[KZ] Trip created: ${state.tripId}');
+              _searchingTripId = state.tripId;
               _loadScheduledTrips();
               _subscribeToTripStart(state.tripId);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1404,14 +1424,18 @@ class _TripHomePageState extends State<TripHomePage>
           _buildMapTapOverlay(),
           if (!_isSearchActive) _buildBottomPanel(),
           if (_step == TripFlowStep.passengerDetails ||
-              _step == TripFlowStep.searchingDriver ||
               _step == TripFlowStep.driverSelection)
             _buildDetailsBackButton(),
           if (_step == TripFlowStep.confirmPickup) _buildConfirmPickupOverlay(),
           if (_step == TripFlowStep.pickOnMap) _buildCenterPin(),
           _buildSearchOverlay(),
           if (_step == TripFlowStep.searchingDriver)
-            const SearchingDriverPopup(),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: SearchingDriverSheet(onCancel: _cancelSearchingTrip),
+            ),
         ],
       ),
     ),

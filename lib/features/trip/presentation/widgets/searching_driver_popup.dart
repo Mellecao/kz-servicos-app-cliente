@@ -1,79 +1,134 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
-class SearchingDriverPopup extends StatefulWidget {
-  const SearchingDriverPopup({super.key});
+class SearchingDriverSheet extends StatefulWidget {
+  final VoidCallback onCancel;
+
+  const SearchingDriverSheet({super.key, required this.onCancel});
 
   @override
-  State<SearchingDriverPopup> createState() => _SearchingDriverPopupState();
+  State<SearchingDriverSheet> createState() => _SearchingDriverSheetState();
 }
 
-class _SearchingDriverPopupState extends State<SearchingDriverPopup>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _SearchingDriverSheetState extends State<SearchingDriverSheet>
+    with TickerProviderStateMixin {
+  late AnimationController _radarController;
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _radarController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 3200),
     )..repeat();
+
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+    );
+
+    _slideController.forward();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _radarController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return SlideTransition(
+      position: _slideAnimation,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 32),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 30,
-              offset: const Offset(0, 8),
+              color: Color(0x1A000000),
+              blurRadius: 24,
+              offset: Offset(0, -6),
             ),
           ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _RadarIcon(controller: _controller),
-            const SizedBox(width: 18),
-            Flexible(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  const Text(
-                    'Buscando motoristas',
-                    style: TextStyle(
-                      fontFamily: 'OutfitBlack',
-                      fontSize: 15,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Aguardando disponibilidade...',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textPrimary.withValues(alpha: 0.5),
+                  _RadarIcon(controller: _radarController),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Buscando motoristas',
+                          style: TextStyle(
+                            fontFamily: 'OutfitBlack',
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Aguardando disponibilidade...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF888888),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: widget.onCancel,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancelar pedido',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -87,8 +142,8 @@ class _RadarIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 48,
-      height: 48,
+      width: 56,
+      height: 56,
       child: AnimatedBuilder(
         animation: controller,
         builder: (context, child) {
@@ -111,10 +166,13 @@ class _RadarPainter extends CustomPainter {
     final maxRadius = size.width / 2;
 
     // Static inner dot
-    final dotPaint = Paint()
-      ..color = AppColors.secondary
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 5, dotPaint);
+    canvas.drawCircle(
+      center,
+      5,
+      Paint()
+        ..color = AppColors.secondary
+        ..style = PaintingStyle.fill,
+    );
 
     // Three expanding rings at staggered phases
     for (int i = 0; i < 3; i++) {
@@ -122,12 +180,14 @@ class _RadarPainter extends CustomPainter {
       final radius = phase * maxRadius;
       final opacity = (1.0 - phase).clamp(0.0, 1.0);
 
-      final ringPaint = Paint()
-        ..color = AppColors.secondary.withValues(alpha: opacity * 0.6)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
-
-      canvas.drawCircle(center, radius, ringPaint);
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = AppColors.secondary.withValues(alpha: opacity * 0.55)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
     }
   }
 
