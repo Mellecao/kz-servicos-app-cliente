@@ -1892,8 +1892,33 @@ class _TripHomePageState extends State<TripHomePage>
             ),
           );
         }
-        // Realtime path — no mock driver available
-        return const SizedBox.shrink(key: ValueKey('none'));
+        // Realtime path — show driver en route with active driver name
+        final driverName = _activeDriverName ?? 'Motorista';
+        return DriverEnRoutePanel(
+          key: const ValueKey('driverEnRoute'),
+          driver: MockDriver(
+            id: 'realtime_driver',
+            name: driverName,
+            initials: driverName
+                .split(' ')
+                .map((e) => e.isNotEmpty ? e[0] : '')
+                .join()
+                .toUpperCase(),
+            carModel: 'Veículo em transporte',
+            carColor: 'N/A',
+            licensePlate: '---',
+            rating: 0.0,
+            description: 'Motorista em rota',
+            rg: '---',
+            birthDate: DateTime.now(),
+            extras: [],
+          ),
+          etaMinutes: 0,
+          isExpanded: _enRoutePanelExpanded,
+          onToggleExpand: () => setState(
+            () => _enRoutePanelExpanded = !_enRoutePanelExpanded,
+          ),
+        );
       case TripFlowStep.driverArrived:
         return DriverArrivedSheet(
           key: const ValueKey('driverArrived'),
