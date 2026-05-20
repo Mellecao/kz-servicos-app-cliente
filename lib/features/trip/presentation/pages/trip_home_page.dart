@@ -34,7 +34,7 @@ import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_confirming_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_en_route_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_selection_panel.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/searching_driver_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/searching_driver_popup.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_trip_card.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
@@ -1410,6 +1410,8 @@ class _TripHomePageState extends State<TripHomePage>
           if (_step == TripFlowStep.confirmPickup) _buildConfirmPickupOverlay(),
           if (_step == TripFlowStep.pickOnMap) _buildCenterPin(),
           _buildSearchOverlay(),
+          if (_step == TripFlowStep.searchingDriver)
+            const SearchingDriverPopup(),
         ],
       ),
     ),
@@ -1874,7 +1876,7 @@ class _TripHomePageState extends State<TripHomePage>
           ),
         );
       case TripFlowStep.searchingDriver:
-        return const SearchingDriverPanel(key: ValueKey('searching'));
+        return const SizedBox.shrink(key: ValueKey('searching'));
       case TripFlowStep.driverSelection:
         return DriverSelectionPanel(
           key: const ValueKey('driverSelection'),
