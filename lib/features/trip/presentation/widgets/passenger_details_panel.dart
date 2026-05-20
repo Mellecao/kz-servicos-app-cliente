@@ -34,6 +34,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   DateTime? _pickupDate;
   bool _isNow = true;
   bool _isToday = true;
+  String _paymentMethod = 'pix';
 
   int get adults => _adults;
   bool get hasChildren => _hasChildren;
@@ -297,29 +298,49 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   }
 
   Widget _buildPaymentMethod() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.pix_rounded, size: 20, color: Colors.teal.shade600),
-          const SizedBox(width: 10),
-          const Text(
-            'PIX',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+    const methods = [
+      ('pix', 'PIX'),
+      ('debit', 'Débito'),
+      ('credit', 'Crédito'),
+      ('cash', 'Dinheiro'),
+      ('billing', 'Faturamento'),
+    ];
+
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: methods.map((entry) {
+          final (value, label) = entry;
+          final selected = _paymentMethod == value;
+          return GestureDetector(
+            onTap: () => setState(() => _paymentMethod = value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppColors.highlight
+                    : AppColors.highlight.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected
+                      ? AppColors.highlight
+                      : AppColors.highlight.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'QuasimodoSemiBold',
+                  fontSize: 13,
+                  color: selected ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
             ),
-          ),
-          const Spacer(),
-          Icon(Icons.check_circle_rounded,
-              size: 20, color: AppColors.highlight),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -525,6 +546,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
       observations: _observationController.text.trim().isEmpty
           ? null
           : _observationController.text.trim(),
+      paymentMethod: _paymentMethod,
     ));
   }
 

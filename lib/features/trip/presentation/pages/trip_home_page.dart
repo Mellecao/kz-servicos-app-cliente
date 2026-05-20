@@ -825,7 +825,7 @@ class _TripHomePageState extends State<TripHomePage>
         childrenDescription: formData.childrenDescription,
         luggageDescription: formData.luggageDescription,
         observations: formData.observations,
-        paymentMethod: 'pix',
+        paymentMethod: formData.paymentMethod,
       );
 
       // Submit via cubit

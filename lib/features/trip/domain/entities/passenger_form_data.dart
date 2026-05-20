@@ -7,6 +7,7 @@ class PassengerFormData {
     this.hasLuggage = false,
     this.luggageDescription,
     this.observations,
+    this.paymentMethod = 'pix',
   });
 
   final int adults;
@@ -16,4 +17,5 @@ class PassengerFormData {
   final bool hasLuggage;
   final String? luggageDescription;
   final String? observations;
+  final String paymentMethod;
 }
