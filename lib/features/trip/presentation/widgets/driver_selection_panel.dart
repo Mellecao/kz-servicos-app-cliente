@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/driver_candidate.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 class DriverSelectionPanel extends StatefulWidget {
-  final ValueChanged<MockDriver> onDriverAccepted;
+  final List<DriverCandidate> candidates;
+  final ValueChanged<DriverCandidate> onDriverAccepted;
 
   const DriverSelectionPanel({
     super.key,
+    required this.candidates,
     required this.onDriverAccepted,
   });
 
@@ -34,17 +36,17 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
     super.dispose();
   }
 
-  void _showDriverProfile(MockDriver driver) {
+  void _showDriverProfile(DriverCandidate candidate) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => PointerInterceptor(
         child: _DriverProfileSheet(
-          driver: driver,
+          candidate: candidate,
           onAccept: () {
             Navigator.of(context).pop();
-            widget.onDriverAccepted(driver);
+            widget.onDriverAccepted(candidate);
           },
         ),
       ),
@@ -53,10 +55,12 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final drivers = MockDriver.samples;
-    return Container(
+    final candidates = widget.candidates;
+
+    if (candidates.isEmpty) {
+      return Container(
         width: double.infinity,
-        padding: const EdgeInsets.only(top: 4, bottom: 20),
+        padding: const EdgeInsets.symmetric(vertical: 32),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.only(
@@ -75,31 +79,71 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildGrabber(),
+            const SizedBox(height: 16),
+            const Text(
+              'Aguardando motoristas...',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
             const SizedBox(height: 8),
             const Text(
-              'Motoristas disponíveis',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+              'O admin está analisando as propostas',
+              style: TextStyle(fontSize: 13, color: Colors.black38),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 160,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: drivers.length,
-                itemBuilder: (ctx, i) => _DriverCard(
-                  driver: drivers[i],
-                  onSeeMore: () => _showDriverProfile(drivers[i]),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildDots(drivers.length),
           ],
         ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: 4, bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildGrabber(),
+          const SizedBox(height: 8),
+          const Text(
+            'Motoristas disponíveis',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 160,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: candidates.length,
+              itemBuilder: (ctx, i) => _DriverCard(
+                candidate: candidates[i],
+                onSeeMore: () => _showDriverProfile(candidates[i]),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildDots(candidates.length),
+        ],
+      ),
     );
   }
 
@@ -138,10 +182,10 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
 }
 
 class _DriverCard extends StatelessWidget {
-  final MockDriver driver;
+  final DriverCandidate candidate;
   final VoidCallback onSeeMore;
 
-  const _DriverCard({required this.driver, required this.onSeeMore});
+  const _DriverCard({required this.candidate, required this.onSeeMore});
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +207,7 @@ class _DriverCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  driver.name,
+                  candidate.driverName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -172,30 +216,23 @@ class _DriverCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${driver.carModel} • ${driver.carColor}',
+                  candidate.vehicleSummary ?? 'Veículo não informado',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.black.withValues(alpha: 0.5),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 16,
-                      color: AppColors.highlight,
+                if (candidate.offeredPrice != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'R\$ ${candidate.offeredPrice!.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF22C55E),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      driver.rating.toStringAsFixed(1),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 GestureDetector(
                   onTap: onSeeMore,
@@ -236,7 +273,7 @@ class _DriverCard extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          driver.initials,
+          candidate.initials,
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -249,18 +286,18 @@ class _DriverCard extends StatelessWidget {
 }
 
 class _DriverProfileSheet extends StatelessWidget {
-  final MockDriver driver;
+  final DriverCandidate candidate;
   final VoidCallback onAccept;
 
   const _DriverProfileSheet({
-    required this.driver,
+    required this.candidate,
     required this.onAccept,
   });
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.85,
+      initialChildSize: 0.65,
       minChildSize: 0.5,
       maxChildSize: 0.92,
       builder: (ctx, scrollController) {
@@ -284,32 +321,14 @@ class _DriverProfileSheet extends StatelessWidget {
                     children: [
                       _buildProfileHeader(),
                       const SizedBox(height: 20),
-                      _buildSection('Sobre', driver.description),
-                      const SizedBox(height: 16),
-                      _buildInfoRow(
-                        'RG',
-                        driver.rg,
-                      ),
-                      _buildInfoRow(
-                        'Data de nascimento',
-                        '${driver.birthDate.day.toString().padLeft(2, '0')}/'
-                            '${driver.birthDate.month.toString().padLeft(2, '0')}/'
-                            '${driver.birthDate.year}',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildSection(
-                        'Veículo',
-                        '${driver.carModel} — ${driver.carColor}',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildCarPhotos(),
-                      const SizedBox(height: 16),
-                      _buildExtras(),
-                      if (driver.driverNote != null &&
-                          driver.driverNote!.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        _buildDriverNote(),
+                      if (candidate.vehicleSummary != null) ...[
+                        _buildSection('Veículo', candidate.vehicleSummary!),
+                        const SizedBox(height: 12),
                       ],
+                      if (candidate.vehiclePlate != null)
+                        _buildInfoRow('Placa', candidate.vehiclePlate!),
+                      if (candidate.vehicleColor != null)
+                        _buildInfoRow('Cor', candidate.vehicleColor!),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -352,7 +371,7 @@ class _DriverProfileSheet extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                driver.initials,
+                candidate.initials,
                 style: const TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.w700,
@@ -363,32 +382,31 @@ class _DriverProfileSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            driver.name,
+            candidate.driverName,
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.star_rounded,
-                size: 18,
-                color: AppColors.highlight,
+          if (candidate.offeredPrice != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF22C55E).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(width: 4),
-              Text(
-                driver.rating.toStringAsFixed(1),
+              child: Text(
+                'R\$ ${candidate.offeredPrice!.toStringAsFixed(2)}',
                 style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF22C55E),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
@@ -401,19 +419,15 @@ class _DriverProfileSheet extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.black54,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           content,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.black.withValues(alpha: 0.6),
-            height: 1.5,
-          ),
+          style: const TextStyle(fontSize: 15, color: Colors.black87),
         ),
       ],
     );
@@ -427,124 +441,14 @@ class _DriverProfileSheet extends StatelessWidget {
           Text(
             '$label: ',
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: Colors.black54,
             ),
           ),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCarPhotos() {
-    return SizedBox(
-      height: 100,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: 3,
-        separatorBuilder: (_, i) => const SizedBox(width: 10),
-        itemBuilder: (ctx, i) => Container(
-          width: 140,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.directions_car_rounded,
-              size: 40,
-              color: Colors.grey.shade400,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExtras() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Adicionais',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: driver.extras.map((e) {
-            return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.highlight.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                e,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.highlight,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDriverNote() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 16, color: Colors.amber.shade700),
-              const SizedBox(width: 6),
-              Text(
-                'Observação do motorista',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.amber.shade800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            driver.driverNote!,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.black.withValues(alpha: 0.7),
-              height: 1.4,
-            ),
+            style: const TextStyle(fontSize: 13, color: Colors.black87),
           ),
         ],
       ),
@@ -553,23 +457,22 @@ class _DriverProfileSheet extends StatelessWidget {
 
   Widget _buildAcceptButton() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       child: SizedBox(
         width: double.infinity,
-        height: 50,
+        height: 52,
         child: ElevatedButton(
           onPressed: onAccept,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.highlight,
             foregroundColor: Colors.white,
-            elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
           ),
           child: const Text(
-            'Aceitar motorista',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            'Selecionar motorista',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ),
       ),
