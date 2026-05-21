@@ -16,6 +16,7 @@ class DriverCandidate extends Equatable {
     this.vehicleYear,
     this.vehicleColor,
     this.vehiclePlate,
+    this.offeredPrice,
   });
 
   final String candidateId;
@@ -30,6 +31,7 @@ class DriverCandidate extends Equatable {
   final int? vehicleYear;
   final String? vehicleColor;
   final String? vehiclePlate;
+  final double? offeredPrice;
 
   String? get vehicleSummary {
     if (vehicleBrand == null && vehicleModel == null) return null;

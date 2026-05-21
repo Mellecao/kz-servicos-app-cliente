@@ -13,6 +13,7 @@ class DriverCandidateModel {
     this.vehicleYear,
     this.vehicleColor,
     this.vehiclePlate,
+    this.offeredPrice,
   });
 
   final String candidateId;
@@ -27,6 +28,7 @@ class DriverCandidateModel {
   final int? vehicleYear;
   final String? vehicleColor;
   final String? vehiclePlate;
+  final double? offeredPrice;
 
   factory DriverCandidateModel.fromJson(Map<String, dynamic> json) {
     final driverProfile = json['driver_profiles'] as Map<String, dynamic>?;
@@ -55,6 +57,7 @@ class DriverCandidateModel {
       vehicleYear: vehicle?['year'] as int?,
       vehicleColor: vehicle?['color'] as String?,
       vehiclePlate: vehicle?['license_plate'] as String?,
+      offeredPrice: (json['offered_price'] as num?)?.toDouble(),
     );
   }
 
@@ -70,5 +73,6 @@ class DriverCandidateModel {
         vehicleYear: vehicleYear,
         vehicleColor: vehicleColor,
         vehiclePlate: vehiclePlate,
+        offeredPrice: offeredPrice,
       );
 }
