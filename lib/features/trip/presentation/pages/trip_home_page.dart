@@ -21,16 +21,15 @@ import 'package:kz_servicos_app/features/trip/data/services/place_details_servic
 import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_data.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_request.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/pending_confirmations_cubit.dart';
-import 'package:kz_servicos_app/features/trip/presentation/cubit/pending_confirmations_state.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_state.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
-import 'package:kz_servicos_app/features/trip/domain/entities/trip_with_candidates.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/address_search_sheet.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_candidate_popup.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_details_panel.dart';
+import 'package:kz_servicos_app/features/trip/data/models/driver_candidate_model.dart';
 import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/driver_candidate.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_confirming_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_en_route_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_selection_panel.dart';
@@ -52,6 +51,7 @@ enum TripFlowStep {
   passengerDetails,
   searchingDriver,
   driverSelection,
+  driverSelected,
   driverConfirming,
   driverEnRoute,
   driverArrived,
@@ -128,6 +128,8 @@ class _TripHomePageState extends State<TripHomePage>
   String? _activeDriverProfileId;
   RealtimeChannel? _tripChannel;
   RealtimeChannel? _driverLocationChannel;
+  List<DriverCandidate> _approvedCandidates = [];
+  RealtimeChannel? _candidatesChannel;
   LatLng? _liveDriverLocation;
   double _liveDriverHeading = 0;
   String? _activeDriverName;
@@ -158,53 +160,6 @@ class _TripHomePageState extends State<TripHomePage>
     }
   }
 
-  bool _isProcessingConfirmations = false;
-
-  Future<void> _processConfirmationQueue(
-    List<TripWithCandidates> queue,
-  ) async {
-    if (_isProcessingConfirmations) return;
-    _isProcessingConfirmations = true;
-    try {
-      for (final item in queue) {
-        if (!mounted) break;
-        final pickedCandidate =
-            await DriverCandidatePopup.show(context, item);
-        if (!mounted) break;
-        if (pickedCandidate == null) continue;
-        try {
-          await context.read<PendingConfirmationsCubit>().acceptCandidate(
-                tripId: pickedCandidate.tripId,
-                driverProfileId: pickedCandidate.driverProfileId,
-                vehicleId: pickedCandidate.vehicleId,
-              );
-          if (!mounted) break;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Motorista ${pickedCandidate.driverName} confirmado!',
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadScheduledTrips();
-        } on Exception catch (e) {
-          if (!mounted) break;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro ao confirmar motorista: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } finally {
-      _isProcessingConfirmations = false;
-      if (mounted) {
-        context.read<PendingConfirmationsCubit>().clear();
-      }
-    }
-  }
 
   void _openSearch() {
     _resolveCurrentAddress();
@@ -740,6 +695,7 @@ class _TripHomePageState extends State<TripHomePage>
   void dispose() {
     _stopPulseAnimation();
     _stopTripTracking();
+    _candidatesChannel?.unsubscribe();
     _searchingTimer?.cancel();
     _confirmingTimer?.cancel();
     _driverMoveTimer?.cancel();
@@ -1076,6 +1032,48 @@ class _TripHomePageState extends State<TripHomePage>
           },
         )
         .subscribe();
+    _subscribeToApprovedCandidates(tripId);
+    _fetchApprovedCandidates(tripId);
+  }
+
+  Future<void> _fetchApprovedCandidates(String tripId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('trip_driver_candidates')
+          .select(
+            'id, trip_id, driver_profile_id, status, offered_price, admin_approved, '
+            'driver_profiles(id, '
+            'provider_profiles(users(full_name, avatar_url)), '
+            'vehicles(id, brand, model, year, color, license_plate, is_active))',
+          )
+          .eq('trip_id', tripId)
+          .eq('admin_approved', true);
+      if (!mounted) return;
+      final candidates = (response as List)
+          .map((json) => DriverCandidateModel.fromJson(json).toEntity())
+          .toList();
+      setState(() => _approvedCandidates = candidates);
+    } catch (e) {
+      debugPrint('[KZ] Error fetching approved candidates: $e');
+    }
+  }
+
+  void _subscribeToApprovedCandidates(String tripId) {
+    final supabase = Supabase.instance.client;
+    _candidatesChannel = supabase
+        .channel('candidates-$tripId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'trip_driver_candidates',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'trip_id',
+            value: tripId,
+          ),
+          callback: (_) => _fetchApprovedCandidates(tripId),
+        )
+        .subscribe();
   }
 
   Future<void> _fetchDriverNameAndStartTracking(
@@ -1119,6 +1117,10 @@ class _TripHomePageState extends State<TripHomePage>
     _confirmingTimer?.cancel();
     _driverMoveTimer?.cancel();
     _tripSummaryTimer?.cancel();
+    _tripChannel?.unsubscribe();
+    _tripChannel = null;
+    _candidatesChannel?.unsubscribe();
+    _candidatesChannel = null;
     setState(() {
       _step = TripFlowStep.idle;
       _polylines = {};
@@ -1139,6 +1141,8 @@ class _TripHomePageState extends State<TripHomePage>
       _destinationPlaceId = null;
       _isCreatingTrip = false;
       _isSearchActive = true;
+      _approvedCandidates = [];
+      _searchingTripId = null;
     });
     context.read<TripCreationCubit>().reset();
   }
@@ -1149,15 +1153,33 @@ class _TripHomePageState extends State<TripHomePage>
     setState(() => _step = TripFlowStep.driverSelection);
   }
 
-  void _onDriverAccepted(MockDriver driver) {
-    setState(() {
-      _selectedDriver = driver;
-      _step = TripFlowStep.driverConfirming;
-    });
-    _confirmingTimer = Timer(
-      const Duration(seconds: 10),
-      _onDriverConfirmed,
-    );
+  Future<void> _onDriverAccepted(DriverCandidate candidate) async {
+    setState(() => _step = TripFlowStep.driverSelected);
+    try {
+      await context.read<PendingConfirmationsCubit>().acceptCandidate(
+            tripId: candidate.tripId,
+            driverProfileId: candidate.driverProfileId,
+            vehicleId: candidate.vehicleId,
+            offeredPrice: candidate.offeredPrice,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Motorista ${candidate.driverName} confirmado!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _loadScheduledTrips();
+    } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() => _step = TripFlowStep.driverSelection);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao confirmar motorista: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _onDriverConfirmed() {
@@ -1398,15 +1420,6 @@ class _TripHomePageState extends State<TripHomePage>
                 ),
               );
               setState(() => _step = TripFlowStep.passengerDetails);
-            }
-          },
-        ),
-        BlocListener<PendingConfirmationsCubit, PendingConfirmationsState>(
-          listenWhen: (prev, curr) =>
-              curr is PendingConfirmationsLoaded && prev is! PendingConfirmationsLoaded,
-          listener: (context, state) {
-            if (state is PendingConfirmationsLoaded && state.items.isNotEmpty) {
-              _processConfirmationQueue(state.items);
             }
           },
         ),
@@ -1904,7 +1917,45 @@ class _TripHomePageState extends State<TripHomePage>
       case TripFlowStep.driverSelection:
         return DriverSelectionPanel(
           key: const ValueKey('driverSelection'),
+          candidates: _approvedCandidates,
           onDriverAccepted: _onDriverAccepted,
+        );
+      case TripFlowStep.driverSelected:
+        return Container(
+          key: const ValueKey('driverSelected'),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF22C55E),
+                size: 48,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Motorista confirmado!',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Aguardando motorista iniciar a corrida',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         );
       case TripFlowStep.driverConfirming:
         return _selectedDriver != null
