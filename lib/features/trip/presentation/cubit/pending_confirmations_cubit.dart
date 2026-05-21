@@ -24,11 +24,13 @@ class PendingConfirmationsCubit extends Cubit<PendingConfirmationsState> {
     required String tripId,
     required String driverProfileId,
     String? vehicleId,
+    double? offeredPrice,
   }) async {
     await _repository.acceptDriverCandidate(
       tripId: tripId,
       driverProfileId: driverProfileId,
       vehicleId: vehicleId,
+      offeredPrice: offeredPrice,
     );
   }
 

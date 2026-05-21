@@ -140,13 +140,13 @@ class TripRepositoryImpl implements TripRepository {
     final candidatesResponse = await _client
         .from('trip_driver_candidates')
         .select(
-          'id, trip_id, driver_profile_id, status, '
+          'id, trip_id, driver_profile_id, status, offered_price, admin_approved, '
           'driver_profiles(id, '
           'provider_profiles(users(full_name, avatar_url)), '
           'vehicles(id, brand, model, year, color, license_plate, is_active))',
         )
         .inFilter('trip_id', tripIds)
-        .eq('status', 'accepted');
+        .eq('admin_approved', true);
 
     final candidatesByTrip = <String, List<DriverCandidateModel>>{};
     for (final row in candidatesResponse) {
@@ -176,6 +176,7 @@ class TripRepositoryImpl implements TripRepository {
     required String tripId,
     required String driverProfileId,
     String? vehicleId,
+    double? offeredPrice,
   }) async {
     // 1. Assign driver + flip status to scheduled.
     final updates = <String, dynamic>{
@@ -183,6 +184,7 @@ class TripRepositoryImpl implements TripRepository {
       'status': 'scheduled',
     };
     if (vehicleId != null) updates['vehicle_id'] = vehicleId;
+    if (offeredPrice != null) updates['final_price'] = offeredPrice;
 
     await _client.from('trips').update(updates).eq('id', tripId);
 
