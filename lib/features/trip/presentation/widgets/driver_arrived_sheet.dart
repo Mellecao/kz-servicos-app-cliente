@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DriverArrivedSheet extends StatefulWidget {
   final String driverName;
@@ -7,6 +8,8 @@ class DriverArrivedSheet extends StatefulWidget {
   final String? destinationAddress;
   final double? offeredPrice;
   final int? passengerCount;
+  final String? driverPhone;
+  final VoidCallback? onOpenChat;
 
   const DriverArrivedSheet({
     super.key,
@@ -15,6 +18,8 @@ class DriverArrivedSheet extends StatefulWidget {
     this.destinationAddress,
     this.offeredPrice,
     this.passengerCount,
+    this.driverPhone,
+    this.onOpenChat,
   });
 
   @override
@@ -105,6 +110,33 @@ class _DriverArrivedSheetState extends State<DriverArrivedSheet> {
             ],
           ),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              if (widget.driverPhone != null) ...[
+                Expanded(
+                  child: _ActionButton(
+                    icon: Icons.phone_rounded,
+                    label: 'Ligar',
+                    color: const Color(0xFF22C55E),
+                    onTap: () async {
+                      final uri = Uri.parse('tel:${widget.driverPhone}');
+                      if (await canLaunchUrl(uri)) launchUrl(uri);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.chat_rounded,
+                  label: 'Chat',
+                  color: AppColors.highlight,
+                  onTap: () => widget.onOpenChat?.call(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           InkWell(
             onTap: () => setState(() => _detailsOpen = !_detailsOpen),
             borderRadius: BorderRadius.circular(12),
@@ -192,13 +224,54 @@ class _DriverArrivedSheetState extends State<DriverArrivedSheet> {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textPrimary,
-            ),
+            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

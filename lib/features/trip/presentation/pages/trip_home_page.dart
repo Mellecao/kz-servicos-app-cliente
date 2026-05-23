@@ -913,6 +913,32 @@ class _TripHomePageState extends State<TripHomePage>
           callback: _onDriverLocationUpdate,
         )
         .subscribe();
+
+    _fetchInitialDriverLocation(driverProfileId);
+  }
+
+  Future<void> _fetchInitialDriverLocation(String driverProfileId) async {
+    try {
+      final data = await Supabase.instance.client
+          .from('driver_locations')
+          .select('latitude, longitude, heading')
+          .eq('driver_profile_id', driverProfileId)
+          .maybeSingle();
+      if (data == null || !mounted) return;
+      final lat = (data['latitude'] as num?)?.toDouble();
+      final lng = (data['longitude'] as num?)?.toDouble();
+      final heading = (data['heading'] as num?)?.toDouble() ?? 0.0;
+      if (lat == null || lng == null) return;
+      setState(() {
+        _liveDriverLocation = LatLng(lat, lng);
+        _liveDriverHeading = heading;
+        _lastDriverRouteUpdate = null;
+      });
+      _updateDriverMarker();
+      _fetchDriverToPickupRoute();
+    } catch (e) {
+      debugPrint('[KZ-C] _fetchInitialDriverLocation error: $e');
+    }
   }
 
   void _stopTripTracking() {
@@ -2438,6 +2464,8 @@ class _TripHomePageState extends State<TripHomePage>
           driverName: _activeDriverName ?? 'Motorista',
           pickupAddress: _pickupAddress,
           destinationAddress: _destinationAddress,
+          driverPhone: _activeDriverPhone,
+          onOpenChat: _openDriverChat,
         );
       case TripFlowStep.tripStarted:
         return KeyedSubtree(
