@@ -15,9 +15,9 @@ class TripBottomNav extends StatelessWidget {
 
   static const _items = [
     (icon: Icons.local_taxi_rounded, label: 'Viagens'),
+    (icon: Icons.calendar_month_rounded, label: 'Agendamentos'),
     (icon: Icons.work_rounded, label: 'Serviços'),
     (icon: Icons.person_rounded, label: 'Perfil'),
-    (icon: Icons.calendar_month_rounded, label: 'Agendamentos'),
   ];
 
   @override
@@ -42,7 +42,7 @@ class TripBottomNav extends StatelessWidget {
               icon: _items[i].icon,
               label: _items[i].label,
               isSelected: selectedIndex == i,
-              badgeCount: i == 3 ? scheduledCount : 0,
+              badgeCount: i == 1 ? scheduledCount : 0,
               onTap: () => onItemSelected(i),
             ),
           );
@@ -73,64 +73,69 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Center(
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 320),
-              curve: Curves.easeOutCubic,
-              width: isSelected ? 56 : 44,
-              height: isSelected ? 56 : 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected
-                    ? AppColors.highlight.withValues(alpha: 0.85)
-                    : Colors.transparent,
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.highlight.withValues(alpha: 0.40),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Center(
-                child: AnimatedScale(
-                  scale: isSelected ? 1.15 : 0.9,
-                  duration: const Duration(milliseconds: 320),
-                  curve: Curves.easeOutCubic,
-                  child: Icon(
-                    icon,
-                    color: isSelected ? Colors.white : Colors.black45,
-                    size: 24,
-                  ),
+        child: SizedBox(
+          width: 60,
+          height: 60,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                width: isSelected ? 56 : 44,
+                height: isSelected ? 56 : 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? AppColors.highlight.withValues(alpha: 0.85)
+                      : Colors.transparent,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.highlight.withValues(alpha: 0.40),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [],
                 ),
-              ),
-            ),
-            if (badgeCount > 0)
-              Positioned(
-                top: -2,
-                right: -2,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '+$badgeCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                child: Center(
+                  child: AnimatedScale(
+                    scale: isSelected ? 1.15 : 0.9,
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutCubic,
+                    child: Icon(
+                      icon,
+                      color: isSelected ? Colors.white : Colors.black45,
+                      size: 24,
                     ),
                   ),
                 ),
               ),
-          ],
+              if (badgeCount > 0)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '+$badgeCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
@@ -24,7 +26,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _tripHistory = MockTripHistory.samples;
-  final int _selectedNavIndex = 2;
+  final int _selectedNavIndex = 3;
   final ImagePicker _imagePicker = ImagePicker();
   String? _avatarPath;
 
@@ -44,6 +46,8 @@ class _ProfilePageState extends State<ProfilePage> {
       case 0:
         context.go('/trip');
       case 1:
+        context.go('/scheduled-trips');
+      case 2:
         context.go('/services');
     }
   }
@@ -131,18 +135,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.secondary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  color: AppColors.secondary,
-                ),
+                child: const Icon(Icons.camera_alt_rounded, color: AppColors.secondary),
               ),
               title: const Text(
                 'Câmera',
-                style: TextStyle(
-                  fontFamily: 'QuasimodoSemiBold',
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
+                style: TextStyle(fontFamily: 'QuasimodoSemiBold', fontSize: 15, color: AppColors.textPrimary),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
@@ -154,18 +151,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.highlight.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.photo_library_rounded,
-                  color: AppColors.highlight,
-                ),
+                child: const Icon(Icons.photo_library_rounded, color: AppColors.highlight),
               ),
               title: const Text(
                 'Galeria',
-                style: TextStyle(
-                  fontFamily: 'QuasimodoSemiBold',
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
+                style: TextStyle(fontFamily: 'QuasimodoSemiBold', fontSize: 15, color: AppColors.textPrimary),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
@@ -184,8 +174,57 @@ class _ProfilePageState extends State<ProfilePage> {
       imageQuality: 80,
     );
 
-    if (picked != null && mounted) {
-      setState(() => _avatarPath = picked.path);
+    if (picked == null || !mounted) return;
+
+    // Show uploading indicator
+    setState(() => _avatarPath = picked.path);
+
+    try {
+      final authState = context.read<AuthCubit>().state;
+      if (authState is! AuthSuccess) return;
+      final userId = authState.user.id;
+
+      final supabase = Supabase.instance.client;
+      final file = File(picked.path);
+      final ext = picked.path.split('.').last.toLowerCase();
+      final storagePath = '$userId/avatar.$ext';
+
+      // Upload (upsert so repeated uploads overwrite)
+      await supabase.storage.from('Profile_Images').upload(
+        storagePath,
+        file,
+        fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
+      );
+
+      // Get public URL
+      final publicUrl = supabase.storage
+          .from('Profile_Images')
+          .getPublicUrl(storagePath);
+
+      // Add cache-bust so the new image loads even if URL is the same
+      final cacheBustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      // Update users table
+      await supabase
+          .from('users')
+          .update({'avatar_url': cacheBustedUrl})
+          .eq('id', userId);
+
+      if (!mounted) return;
+
+      // Update AuthCubit so the avatar shows everywhere immediately
+      context.read<AuthCubit>().updateUser(
+        authState.user.copyWith(avatarUrl: cacheBustedUrl),
+      );
+      setState(() => _avatarPath = null); // clear local path, use URL now
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao salvar foto. Tente novamente.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

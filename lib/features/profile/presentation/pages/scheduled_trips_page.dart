@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/scheduled_trip_widget.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
@@ -58,7 +60,7 @@ class ScheduledTripsPage extends StatelessWidget {
             left: 20,
             right: 20,
             child: TripBottomNav(
-              selectedIndex: 2,
+              selectedIndex: 3,
               onItemSelected: (index) => _onNavTap(context, index),
             ),
           ),
@@ -70,6 +72,8 @@ class ScheduledTripsPage extends StatelessWidget {
   void _onNavTap(BuildContext context, int index) {
     if (index == 0) {
       context.go('/trip');
+    } else if (index == 1) {
+      context.go('/services');
     } else if (index == 2) {
       context.go('/profile');
     }
@@ -138,7 +142,18 @@ class ScheduledTripsPage extends StatelessWidget {
         return ScheduledTripWidget(
           trip: trip,
           showMapPreview: true,
-          onDetailsTap: () => TripDetailsSheet.show(context, trip),
+          onDetailsTap: () => TripDetailsSheet.show(
+            context,
+            trip,
+            onCancel: () {
+              context.read<ScheduledTripsCubit>().cancel(trip.id);
+            },
+            onChat: () {
+              final authState = context.read<AuthCubit>().state;
+              if (authState is! AuthSuccess) return;
+              context.push('/chat/${trip.id}');
+            },
+          ),
         );
       },
     );

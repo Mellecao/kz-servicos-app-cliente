@@ -33,7 +33,9 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
     switch (index) {
       case 0:
         context.go('/trip');
-      case 2:
+      case 1:
+        context.go('/scheduled-trips');
+      case 3:
         context.go('/profile');
     }
   }
@@ -132,7 +134,7 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
             left: 20,
             right: 20,
             child: TripBottomNav(
-              selectedIndex: 1,
+              selectedIndex: 2,
               onItemSelected: _onNavItemSelected,
             ),
           ),

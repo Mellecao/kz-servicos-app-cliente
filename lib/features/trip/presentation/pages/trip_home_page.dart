@@ -2495,13 +2495,16 @@ class _TripHomePageState extends State<TripHomePage>
             selectedIndex: _selectedNavIndex,
             scheduledCount: count,
             onItemSelected: (index) {
-              if (index == 2) {
-                context.go('/profile');
-              } else {
-                setState(() => _selectedNavIndex = index);
-              }
               if (index == 1) {
+                context.go('/scheduled-trips');
+                return;
+              }
+              if (index == 2) {
                 context.go('/services');
+                return;
+              }
+              if (index == 3) {
+                context.go('/profile');
                 return;
               }
               setState(() => _selectedNavIndex = index);
