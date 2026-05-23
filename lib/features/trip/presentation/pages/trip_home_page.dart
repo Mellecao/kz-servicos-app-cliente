@@ -2126,7 +2126,7 @@ class _TripHomePageState extends State<TripHomePage>
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeInOut,
-      bottom: show ? 108 : -80,
+      bottom: show ? 118 : -80,
       left: 20,
       right: 20,
       child: PointerInterceptor(
@@ -2138,11 +2138,11 @@ class _TripHomePageState extends State<TripHomePage>
               vertical: 18,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              color: AppColors.highlight,
+              borderRadius: BorderRadius.circular(9999),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
+                  color: AppColors.highlight.withValues(alpha: 0.40),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
@@ -2150,13 +2150,13 @@ class _TripHomePageState extends State<TripHomePage>
             ),
             child: Row(
               children: [
-                const Icon(Icons.search_rounded, color: Colors.black45),
+                Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.9)),
                 const SizedBox(width: 12),
                 Text(
                   'Para onde vamos hoje?',
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.black.withValues(alpha: 0.30),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                 ),
               ],
