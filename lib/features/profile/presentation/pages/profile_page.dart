@@ -213,6 +213,7 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       setState(() => _avatarPath = null); // clear local path, use URL now
     } catch (e) {
+      debugPrint('[KZ] avatar upload erro: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
