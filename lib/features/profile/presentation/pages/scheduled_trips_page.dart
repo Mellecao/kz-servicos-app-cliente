@@ -19,6 +19,7 @@ class ScheduledTripsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Column(
             children: [

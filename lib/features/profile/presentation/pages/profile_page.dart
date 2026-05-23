@@ -239,6 +239,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: 120),
