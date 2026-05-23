@@ -60,7 +60,7 @@ class ScheduledTripsPage extends StatelessWidget {
             left: 20,
             right: 20,
             child: TripBottomNav(
-              selectedIndex: 3,
+              selectedIndex: 1,
               onItemSelected: (index) => _onNavTap(context, index),
             ),
           ),
@@ -72,11 +72,12 @@ class ScheduledTripsPage extends StatelessWidget {
   void _onNavTap(BuildContext context, int index) {
     if (index == 0) {
       context.go('/trip');
-    } else if (index == 1) {
-      context.go('/services');
     } else if (index == 2) {
+      context.go('/services');
+    } else if (index == 3) {
       context.go('/profile');
     }
+    // index == 1 is Agendamentos — already on this page, do nothing
   }
 
   Widget _buildHeader(BuildContext context) {

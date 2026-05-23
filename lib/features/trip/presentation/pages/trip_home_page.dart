@@ -169,24 +169,43 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Future<void> _checkExistingSearchingTrip(String clientId) async {
-    // If already in an active trip flow, don't override.
     if (_step != TripFlowStep.idle) return;
     try {
       final response = await Supabase.instance.client
           .from('trips')
-          .select('id')
+          .select('id, status, driver_profile_id, started_at, driver_arrived_at')
           .eq('client_id', clientId)
-          .eq('status', 'searching_drivers')
+          .inFilter('status', ['searching_drivers', 'started'])
+          .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
       if (response == null || !mounted) return;
       final tripId = response['id'] as String;
-      if (_searchingTripId == tripId) return;
-      setState(() {
-        _searchingTripId = tripId;
-        _step = TripFlowStep.driverSelection;
-      });
-      _subscribeToTripStart(tripId);
+      final status = response['status'] as String;
+      final driverProfileId = response['driver_profile_id'] as String?;
+      final startedAt = response['started_at'];
+      final driverArrivedAt = response['driver_arrived_at'];
+
+      if (status == 'searching_drivers') {
+        if (_searchingTripId == tripId) return;
+        setState(() {
+          _searchingTripId = tripId;
+          _step = TripFlowStep.driverSelection;
+        });
+        _subscribeToTripStart(tripId);
+      } else if (status == 'started' && driverProfileId != null) {
+        // Resume an active trip the client navigated away from
+        await _fetchDriverNameAndStartTracking(tripId, driverProfileId);
+        if (!mounted) return;
+        if (startedAt != null) {
+          setState(() => _step = TripFlowStep.tripStarted);
+          _enterInTripMapView();
+        } else if (driverArrivedAt != null) {
+          setState(() => _step = TripFlowStep.driverArrived);
+          _enterDriverArrivedMapView();
+        }
+        // If neither, driverEnRoute was already set by _fetchDriverNameAndStartTracking
+      }
     } catch (e) {
       debugPrint('[KZ] _checkExistingSearchingTrip error: $e');
     }
