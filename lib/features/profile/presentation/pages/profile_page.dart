@@ -187,22 +187,17 @@ class _ProfilePageState extends State<ProfilePage> {
       final supabase = Supabase.instance.client;
       final file = File(picked.path);
       final ext = picked.path.split('.').last.toLowerCase();
-      final storagePath = '$userId/avatar.$ext';
+      final storagePath = 'users/$userId/avatar.$ext';
 
-      // Upload (upsert so repeated uploads overwrite)
       await supabase.storage.from('Profile_Images').upload(
         storagePath,
         file,
-        fileOptions: const FileOptions(upsert: true, contentType: 'image/jpeg'),
+        fileOptions: const FileOptions(upsert: true),
       );
 
-      // Get public URL
-      final publicUrl = supabase.storage
-          .from('Profile_Images')
-          .getPublicUrl(storagePath);
-
-      // Add cache-bust so the new image loads even if URL is the same
-      final cacheBustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final cacheBustedUrl =
+          '${supabase.storage.from('Profile_Images').getPublicUrl(storagePath)}?v=$ts';
 
       // Update users table
       await supabase
