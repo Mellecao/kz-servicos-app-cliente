@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,6 +15,7 @@ import 'package:kz_servicos_app/core/constants/map_styles.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/trip/data/models/place_prediction.dart';
+import 'package:kz_servicos_app/features/trip/data/models/recent_destination.dart';
 import 'package:kz_servicos_app/features/trip/data/services/directions_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/geocoding_address_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/geocoding_service.dart';
@@ -133,7 +135,12 @@ class _TripHomePageState extends State<TripHomePage>
   LatLng? _liveDriverLocation;
   double _liveDriverHeading = 0;
   String? _activeDriverName;
+  String? _activeDriverUserId;
+  // CHANGE 1: new state variables
+  String? _activeDriverPhone;
+  final Map<int, BitmapDescriptor> _carIconCache = {};
   DateTime? _lastDriverRouteUpdate;
+  List<RecentDestination> _recentDestinations = [];
 
   @override
   void initState() {
@@ -157,6 +164,31 @@ class _TripHomePageState extends State<TripHomePage>
     final authState = context.read<AuthCubit>().state;
     if (authState is AuthSuccess) {
       context.read<PendingConfirmationsCubit>().load(authState.user.id);
+      _checkExistingSearchingTrip(authState.user.id);
+    }
+  }
+
+  Future<void> _checkExistingSearchingTrip(String clientId) async {
+    // If already in an active trip flow, don't override.
+    if (_step != TripFlowStep.idle) return;
+    try {
+      final response = await Supabase.instance.client
+          .from('trips')
+          .select('id')
+          .eq('client_id', clientId)
+          .eq('status', 'searching_drivers')
+          .limit(1)
+          .maybeSingle();
+      if (response == null || !mounted) return;
+      final tripId = response['id'] as String;
+      if (_searchingTripId == tripId) return;
+      setState(() {
+        _searchingTripId = tripId;
+        _step = TripFlowStep.driverSelection;
+      });
+      _subscribeToTripStart(tripId);
+    } catch (e) {
+      debugPrint('[KZ] _checkExistingSearchingTrip error: $e');
     }
   }
 
@@ -829,20 +861,24 @@ class _TripHomePageState extends State<TripHomePage>
 
     final supabase = Supabase.instance.client;
 
+    debugPrint('[KZ-C] _startTripTracking subscribing trip-$tripId driverProfileId=$driverProfileId');
     _tripChannel = supabase
         .channel('trip-$tripId')
         .onPostgresChanges(
           event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'trips',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'id',
-            value: tripId,
-          ),
-          callback: _onTripUpdate,
+          callback: (payload) {
+            // Filtrar manualmente: sem REPLICA IDENTITY FULL, o filtro
+            // Postgres em UPDATE pode falhar para colunas não-PK.
+            final id = payload.newRecord['id'] as String?;
+            if (id != tripId) return;
+            _onTripUpdate(payload);
+          },
         )
-        .subscribe();
+        .subscribe((status, error) {
+          debugPrint('[KZ-C] trip-$tripId channel status=$status err=$error');
+        });
 
     _driverLocationChannel = supabase
         .channel('driver-loc-$driverProfileId')
@@ -868,25 +904,37 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   void _onTripUpdate(PostgresChangePayload payload) {
-    if (!mounted) return;
+    debugPrint('[KZ-C] _onTripUpdate received: new=${payload.newRecord} old=${payload.oldRecord}');
+    if (!mounted) {
+      debugPrint('[KZ-C] _onTripUpdate IGNORED (not mounted)');
+      return;
+    }
     final record = payload.newRecord;
     final driverArrivedAt = record['driver_arrived_at'];
     final startedAt = record['started_at'];
     final status = record['status'] as String?;
-    // Capture step before any setState so the second conditional block
-    // evaluates the original step, not a value that may have just changed.
     final currentStep = _step;
+    debugPrint('[KZ-C] _onTripUpdate parsed: driverArrivedAt=$driverArrivedAt startedAt=$startedAt status=$status currentStep=$currentStep');
+
+    // Trip finalizada — prioridade máxima, ignora outras transições.
+    if (status == 'finished') {
+      debugPrint('[KZ-C] Transition → tripRating (finished)');
+      _stopTripTracking();
+      _tripSummaryTimer?.cancel();
+      setState(() => _step = TripFlowStep.tripRating);
+      return;
+    }
 
     if (startedAt != null && currentStep != TripFlowStep.tripStarted) {
+      debugPrint('[KZ-C] Transition → tripStarted');
       setState(() => _step = TripFlowStep.tripStarted);
       _enterInTripMapView();
     } else if (driverArrivedAt != null && currentStep == TripFlowStep.driverEnRoute) {
+      debugPrint('[KZ-C] Transition → driverArrived');
       setState(() => _step = TripFlowStep.driverArrived);
-    }
-
-    if (status == 'finished' && currentStep == TripFlowStep.tripStarted) {
-      _stopTripTracking();
-      setState(() => _step = TripFlowStep.tripSummary);
+      _enterDriverArrivedMapView();
+    } else {
+      debugPrint('[KZ-C] No transition (conditions not met)');
     }
   }
 
@@ -912,27 +960,30 @@ class _TripHomePageState extends State<TripHomePage>
     }
   }
 
+  // CHANGE 2: fetchRouteWithDuration + ETA
   Future<void> _fetchDriverToPickupRoute() async {
     if (_liveDriverLocation == null || _pickupLatLng == null) return;
-    final points = await _directionsService.fetchRoute(
+    final result = await _directionsService.fetchRouteWithDuration(
       origin: _liveDriverLocation!,
       destination: _pickupLatLng!,
     );
-    if (!mounted || points.isEmpty) return;
+    if (!mounted || result.points.isEmpty) return;
+    final etaMin = (result.durationSeconds / 60).ceil().clamp(1, 120);
     setState(() {
+      _driverEtaMinutes = etaMin;
       _polylines = {
         ..._polylines.where((p) =>
             p.polylineId.value != 'driver_route_glow' &&
             p.polylineId.value != 'driver_route'),
         Polyline(
           polylineId: const PolylineId('driver_route_glow'),
-          points: points,
+          points: result.points,
           color: AppColors.secondary.withValues(alpha: 0.15),
           width: 10,
         ),
         Polyline(
           polylineId: const PolylineId('driver_route'),
-          points: points,
+          points: result.points,
           color: AppColors.secondary,
           width: 4,
         ),
@@ -940,21 +991,36 @@ class _TripHomePageState extends State<TripHomePage>
     });
   }
 
+  // CHANGE 3: rotated car icon marker
   void _updateDriverMarker() {
     if (_liveDriverLocation == null) return;
-    final driverMarker = Marker(
-      markerId: const MarkerId('live_driver'),
-      position: _liveDriverLocation!,
-      icon: _cachedBlueDotIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      anchor: const Offset(0.5, 0.5),
-      zIndexInt: 10,
-    );
-    setState(() {
-      _markers = {
-        ..._markers.where((m) => m.markerId.value != 'live_driver'),
-        driverMarker,
-      };
-    });
+    final roundedHeading = (_liveDriverHeading / 5).round() * 5;
+
+    void placeMarker(BitmapDescriptor icon) {
+      if (!mounted) return;
+      setState(() {
+        _markers = {
+          ..._markers.where((m) => m.markerId.value != 'live_driver'),
+          Marker(
+            markerId: const MarkerId('live_driver'),
+            position: _liveDriverLocation!,
+            icon: icon,
+            anchor: const Offset(0.5, 0.5),
+            zIndexInt: 10,
+          ),
+        };
+      });
+    }
+
+    final cached = _carIconCache[roundedHeading];
+    if (cached != null) {
+      placeMarker(cached);
+    } else {
+      _createCarIcon(_liveDriverHeading).then((icon) {
+        _carIconCache[roundedHeading] = icon;
+        placeMarker(icon);
+      });
+    }
   }
 
   Future<void> _enterInTripMapView() async {
@@ -1009,6 +1075,7 @@ class _TripHomePageState extends State<TripHomePage>
 
   void _subscribeToTripStart(String tripId) {
     final supabase = Supabase.instance.client;
+    debugPrint('[KZ-C] _subscribeToTripStart subscribing trip-start-$tripId');
     _tripChannel = supabase
         .channel('trip-start-$tripId')
         .onPostgresChanges(
@@ -1021,17 +1088,21 @@ class _TripHomePageState extends State<TripHomePage>
             value: tripId,
           ),
           callback: (payload) {
+            debugPrint('[KZ-C] trip-start payload: ${payload.newRecord}');
             final status = payload.newRecord['status'] as String?;
             final driverProfileId =
                 payload.newRecord['driver_profile_id'] as String?;
             if (status == 'started' && driverProfileId != null) {
+              debugPrint('[KZ-C] status=started → handing off to _fetchDriverNameAndStartTracking');
               _tripChannel?.unsubscribe();
               _tripChannel = null;
               _fetchDriverNameAndStartTracking(tripId, driverProfileId);
             }
           },
         )
-        .subscribe();
+        .subscribe((status, error) {
+          debugPrint('[KZ-C] trip-start-$tripId channel status=$status err=$error');
+        });
     _subscribeToApprovedCandidates(tripId);
     _fetchApprovedCandidates(tripId);
   }
@@ -1052,7 +1123,14 @@ class _TripHomePageState extends State<TripHomePage>
       final candidates = (response as List)
           .map((json) => DriverCandidateModel.fromJson(json).toEntity())
           .toList();
-      setState(() => _approvedCandidates = candidates);
+      debugPrint('[KZ] Approved candidates fetched: ${candidates.length}');
+      setState(() {
+        _approvedCandidates = candidates;
+        if (candidates.isNotEmpty &&
+            _step == TripFlowStep.searchingDriver) {
+          _step = TripFlowStep.driverSelection;
+        }
+      });
     } catch (e) {
       debugPrint('[KZ] Error fetching approved candidates: $e');
     }
@@ -1060,34 +1138,47 @@ class _TripHomePageState extends State<TripHomePage>
 
   void _subscribeToApprovedCandidates(String tripId) {
     final supabase = Supabase.instance.client;
+    debugPrint('[KZ] Subscribing to candidates for tripId=$tripId');
     _candidatesChannel = supabase
         .channel('candidates-$tripId')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'trip_driver_candidates',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'trip_id',
-            value: tripId,
-          ),
-          callback: (_) => _fetchApprovedCandidates(tripId),
+          callback: (payload) {
+            debugPrint(
+                '[KZ] candidates event: type=${payload.eventType} '
+                'new=${payload.newRecord} old=${payload.oldRecord}');
+            // Always refetch — the fetch query itself filters by tripId,
+            // so we don't need to filter in the callback. Without
+            // REPLICA IDENTITY FULL, UPDATE payloads omit unchanged
+            // columns (including trip_id), making payload-level filtering
+            // unreliable.
+            _fetchApprovedCandidates(tripId);
+          },
         )
-        .subscribe();
+        .subscribe((status, error) {
+          debugPrint('[KZ] candidates channel status=$status err=$error');
+        });
   }
 
+  // CHANGE 4: also fetch phone
   Future<void> _fetchDriverNameAndStartTracking(
       String tripId, String driverProfileId) async {
     try {
       final data = await Supabase.instance.client
           .from('driver_profiles')
-          .select('provider_profiles(users(full_name))')
+          .select('provider_profiles(user_id, users(full_name, phone))')
           .eq('id', driverProfileId)
           .single();
       final fullName =
           (data['provider_profiles']?['users']?['full_name'] as String?) ??
               'Motorista';
+      final userId = data['provider_profiles']?['user_id'] as String?;
+      final phone = data['provider_profiles']?['users']?['phone'] as String?;
       if (!mounted) return;
+      _activeDriverUserId = userId;
+      _activeDriverPhone = phone;
       setState(() => _step = TripFlowStep.driverEnRoute);
       _startTripTracking(tripId, driverProfileId, fullName);
     } catch (_) {}
@@ -1143,6 +1234,8 @@ class _TripHomePageState extends State<TripHomePage>
       _isSearchActive = true;
       _approvedCandidates = [];
       _searchingTripId = null;
+      // CHANGE 13: clear phone on back
+      _activeDriverPhone = null;
     });
     context.read<TripCreationCubit>().reset();
   }
@@ -1153,6 +1246,7 @@ class _TripHomePageState extends State<TripHomePage>
     setState(() => _step = TripFlowStep.driverSelection);
   }
 
+  // CHANGE 5: call _finishScheduledTripFlow instead of snackbar
   Future<void> _onDriverAccepted(DriverCandidate candidate) async {
     setState(() => _step = TripFlowStep.driverSelected);
     try {
@@ -1163,13 +1257,8 @@ class _TripHomePageState extends State<TripHomePage>
             offeredPrice: candidate.offeredPrice,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Motorista ${candidate.driverName} confirmado!'),
-          backgroundColor: Colors.green,
-        ),
-      );
       _loadScheduledTrips();
+      _finishScheduledTripFlow();
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() => _step = TripFlowStep.driverSelection);
@@ -1288,9 +1377,11 @@ class _TripHomePageState extends State<TripHomePage>
     });
   }
 
+  // CHANGE 6: driverArrived step + 8s simulate then tripStarted
   void _onDriverArrived() {
+    _driverMoveTimer?.cancel();
     setState(() {
-      _step = TripFlowStep.tripStarted;
+      _step = TripFlowStep.driverArrived;
       _driverEtaMinutes = 0;
       _markers = {
         ..._markers.where((m) => m.markerId.value != 'fake_driver'),
@@ -1301,20 +1392,21 @@ class _TripHomePageState extends State<TripHomePage>
         ),
       };
     });
-    if (_routePoints.isNotEmpty) {
-      _startPulseAnimation(_routePoints);
-    }
-    _fitBounds();
+    _enterDriverArrivedMapView();
 
-    // After 10s of "trip started", simulate arrival and show summary
-    _tripSummaryTimer = Timer(const Duration(seconds: 10), () {
-      if (!mounted) return;
-      _resolveAddressesForSummary();
-      setState(() => _step = TripFlowStep.tripSummary);
-      // After 10s of summary, show rating
+    // Simulate driver clicking "iniciar corrida" after 8s
+    _tripSummaryTimer = Timer(const Duration(seconds: 8), () {
+      if (!mounted || _step != TripFlowStep.driverArrived) return;
+      setState(() => _step = TripFlowStep.tripStarted);
+      _enterInTripMapView();
       _tripSummaryTimer = Timer(const Duration(seconds: 10), () {
         if (!mounted) return;
-        setState(() => _step = TripFlowStep.tripRating);
+        _resolveAddressesForSummary();
+        setState(() => _step = TripFlowStep.tripSummary);
+        _tripSummaryTimer = Timer(const Duration(seconds: 10), () {
+          if (!mounted) return;
+          setState(() => _step = TripFlowStep.tripRating);
+        });
       });
     });
   }
@@ -1335,8 +1427,33 @@ class _TripHomePageState extends State<TripHomePage>
     }
   }
 
-  void _onRatingSubmitted(int rating, String comment) {
+  Future<void> _onRatingSubmitted(int rating, String comment) async {
     debugPrint('[KZ] Rating: $rating stars, comment: $comment');
+    final supabase = Supabase.instance.client;
+    final raterId = supabase.auth.currentUser?.id;
+    final tripId = _activeTripId;
+    final ratedId = _activeDriverUserId;
+    if (raterId != null && tripId != null && ratedId != null) {
+      try {
+        await supabase.from('ratings').insert({
+          'trip_id': tripId,
+          'rater_id': raterId,
+          'rated_id': ratedId,
+          'rating': rating,
+          'comment': comment.trim().isEmpty ? null : comment.trim(),
+        });
+      } catch (e) {
+        debugPrint('[KZ] Failed to save rating: $e');
+      }
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Obrigado pelo feedback!'),
+          backgroundColor: Color(0xFF2ECC71),
+        ),
+      );
+    }
     _resetToIdle();
   }
 
@@ -1344,6 +1461,30 @@ class _TripHomePageState extends State<TripHomePage>
     _resetToIdle();
   }
 
+  Future<void> _onReportProblem() async {
+    // Número do suporte KZ no WhatsApp (sem +, formato internacional).
+    const supportNumber = '5511999999999';
+    final tripId = _activeTripId ?? '—';
+    final driver = _activeDriverName ?? 'motorista';
+    final origin = _pickupAddress ?? '—';
+    final destination = _destinationAddress ?? '—';
+    final message =
+        'Olá, tive um problema com a corrida.\n'
+        'Viagem: $tripId\n'
+        'Motorista: $driver\n'
+        'Origem: $origin\n'
+        'Destino: $destination';
+    final url = Uri.parse(
+      'https://wa.me/$supportNumber?text=${Uri.encodeComponent(message)}',
+    );
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('[KZ] Failed to open WhatsApp: $e');
+    }
+  }
+
+  // CHANGE 8: clear _activeDriverPhone in _resetToIdle
   void _resetToIdle() {
     _stopPulseAnimation();
     _tripSummaryTimer?.cancel();
@@ -1366,6 +1507,7 @@ class _TripHomePageState extends State<TripHomePage>
       _pickupPlaceId = null;
       _destinationPlaceId = null;
       _isCreatingTrip = false;
+      _activeDriverPhone = null;
     });
     context.read<TripCreationCubit>().reset();
   }
@@ -1386,6 +1528,231 @@ class _TripHomePageState extends State<TripHomePage>
     await controller.animateCamera(
       CameraUpdate.newLatLngBounds(bounds, 120),
     );
+  }
+
+  // CHANGE 12: new methods before // ──── Build ────
+  void _finishScheduledTripFlow() {
+    _searchingTimer?.cancel();
+    _confirmingTimer?.cancel();
+    _driverMoveTimer?.cancel();
+    _tripSummaryTimer?.cancel();
+    _tripChannel?.unsubscribe();
+    _tripChannel = null;
+    _candidatesChannel?.unsubscribe();
+    _candidatesChannel = null;
+    setState(() {
+      _step = TripFlowStep.idle;
+      _polylines = {};
+      _markers = {};
+      _routePoints = [];
+      _panelMinimized = false;
+      _destinationLatLng = null;
+      _pickupLatLng = null;
+      _stops = [];
+      _selectedDriver = null;
+      _driverToPickupRoute = [];
+      _driverRouteIndex = 0;
+      _enRoutePanelExpanded = false;
+      _driverEtaMinutes = 0;
+      _pickupAddress = null;
+      _destinationAddress = null;
+      _pickupPlaceId = null;
+      _destinationPlaceId = null;
+      _isCreatingTrip = false;
+      _approvedCandidates = [];
+      _searchingTripId = null;
+      _activeDriverPhone = null;
+    });
+    context.read<TripCreationCubit>().reset();
+  }
+
+  Future<void> _onDriverRejected(DriverCandidate candidate) async {
+    try {
+      await Supabase.instance.client
+          .from('trip_driver_candidates')
+          .update({'status': 'rejected'})
+          .eq('id', candidate.candidateId);
+    } catch (e) {
+      debugPrint('[KZ] Failed to reject candidate: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao recusar motorista. Tente novamente.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openDriverChat() async {
+    final tripId = _searchingTripId ?? _activeTripId;
+    if (tripId == null || _activeDriverUserId == null) return;
+    final clientId = Supabase.instance.client.auth.currentUser?.id;
+    if (clientId == null) return;
+    try {
+      final existing = await Supabase.instance.client
+          .from('chat_rooms')
+          .select('id')
+          .eq('trip_id', tripId)
+          .maybeSingle();
+      final String chatRoomId;
+      if (existing != null) {
+        chatRoomId = existing['id'] as String;
+      } else {
+        final inserted = await Supabase.instance.client
+            .from('chat_rooms')
+            .insert({
+              'trip_id': tripId,
+              'client_id': clientId,
+              'provider_id': _activeDriverUserId!,
+            })
+            .select('id')
+            .single();
+        chatRoomId = inserted['id'] as String;
+      }
+      if (mounted) context.go('/chat/$chatRoomId');
+    } catch (e) {
+      debugPrint('[KZ] Error opening chat: $e');
+    }
+  }
+
+  Future<void> _enterDriverArrivedMapView() async {
+    setState(() {
+      _polylines = _polylines.where((p) =>
+          p.polylineId.value != 'driver_route_glow' &&
+          p.polylineId.value != 'driver_route').toSet();
+    });
+    if (_pickupLatLng == null) return;
+
+    final pickupIcon = await _createYellowPinIcon();
+    final userIcon = await _createBlueDotIcon();
+
+    List<LatLng> routePoints = [];
+    if (_currentLocation != null) {
+      final result = await _directionsService.fetchRouteWithDuration(
+        origin: _currentLocation!,
+        destination: _pickupLatLng!,
+      );
+      routePoints = result.points;
+    }
+    if (!mounted) return;
+
+    if (routePoints.isNotEmpty) {
+      setState(() {
+        _polylines = {
+          Polyline(
+            polylineId: const PolylineId('user_to_pickup_glow'),
+            points: routePoints,
+            color: AppColors.highlight.withValues(alpha: 0.18),
+            width: 10,
+          ),
+          Polyline(
+            polylineId: const PolylineId('user_to_pickup'),
+            points: routePoints,
+            color: AppColors.highlight,
+            width: 4,
+          ),
+        };
+        _markers = {
+          if (_currentLocation != null)
+            Marker(
+              markerId: const MarkerId('user_current'),
+              position: _currentLocation!,
+              icon: userIcon,
+              anchor: const Offset(0.5, 0.5),
+            ),
+          Marker(
+            markerId: const MarkerId('pickup'),
+            position: _pickupLatLng!,
+            icon: pickupIcon,
+            anchor: const Offset(0.5, 1.0),
+          ),
+        };
+      });
+    } else {
+      setState(() {
+        _polylines = {
+          if (_currentLocation != null)
+            Polyline(
+              polylineId: const PolylineId('user_to_pickup_walk'),
+              points: [_currentLocation!, _pickupLatLng!],
+              color: AppColors.highlight,
+              width: 3,
+              patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+            ),
+        };
+        _markers = {
+          if (_currentLocation != null)
+            Marker(
+              markerId: const MarkerId('user_current'),
+              position: _currentLocation!,
+              icon: userIcon,
+              anchor: const Offset(0.5, 0.5),
+            ),
+          Marker(
+            markerId: const MarkerId('pickup'),
+            position: _pickupLatLng!,
+            icon: pickupIcon,
+            anchor: const Offset(0.5, 1.0),
+          ),
+        };
+      });
+    }
+
+    if (_currentLocation != null) {
+      final controller = await _mapController.future;
+      final bounds = LatLngBounds(
+        southwest: LatLng(
+          math.min(_currentLocation!.latitude, _pickupLatLng!.latitude),
+          math.min(_currentLocation!.longitude, _pickupLatLng!.longitude),
+        ),
+        northeast: LatLng(
+          math.max(_currentLocation!.latitude, _pickupLatLng!.latitude),
+          math.max(_currentLocation!.longitude, _pickupLatLng!.longitude),
+        ),
+      );
+      await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+    } else {
+      final controller = await _mapController.future;
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: _pickupLatLng!, zoom: 17),
+        ),
+      );
+    }
+  }
+
+  Future<BitmapDescriptor> _createCarIcon(double heading) async {
+    const size = 40.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.translate(size / 2, size / 2);
+    canvas.rotate(heading * math.pi / 180);
+    canvas.translate(-size / 2, -size / 2);
+    final bodyPaint = Paint()..color = AppColors.highlight;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: const Offset(size / 2, size / 2),
+          width: 16,
+          height: 26,
+        ),
+        const Radius.circular(4),
+      ),
+      bodyPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size / 2 - 5, size / 2 - 11, 10, 5),
+        const Radius.circular(2),
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.85),
+    );
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.bytes(byteData!.buffer.asUint8List());
   }
 
   // ──── Build ────
@@ -1914,11 +2281,13 @@ class _TripHomePageState extends State<TripHomePage>
         );
       case TripFlowStep.searchingDriver:
         return const SizedBox.shrink(key: ValueKey('searching'));
+      // CHANGE 10: pass onDriverRejected
       case TripFlowStep.driverSelection:
         return DriverSelectionPanel(
           key: const ValueKey('driverSelection'),
           candidates: _approvedCandidates,
           onDriverAccepted: _onDriverAccepted,
+          onDriverRejected: _onDriverRejected,
         );
       case TripFlowStep.driverSelected:
         return Container(
@@ -1964,6 +2333,7 @@ class _TripHomePageState extends State<TripHomePage>
                 driver: _selectedDriver!,
               )
             : const SizedBox.shrink(key: ValueKey('none'));
+      // CHANGE 11: pass driverPhone + onOpenChat, fix etaMinutes in realtime path
       case TripFlowStep.driverEnRoute:
         if (_selectedDriver != null) {
           return DriverEnRoutePanel(
@@ -1971,6 +2341,8 @@ class _TripHomePageState extends State<TripHomePage>
             driver: _selectedDriver!,
             etaMinutes: _driverEtaMinutes,
             isExpanded: _enRoutePanelExpanded,
+            driverPhone: _activeDriverPhone,
+            onOpenChat: _openDriverChat,
             onToggleExpand: () => setState(
               () => _enRoutePanelExpanded = !_enRoutePanelExpanded,
             ),
@@ -1997,8 +2369,10 @@ class _TripHomePageState extends State<TripHomePage>
             birthDate: DateTime.now(),
             extras: [],
           ),
-          etaMinutes: 0,
+          etaMinutes: _driverEtaMinutes,
           isExpanded: _enRoutePanelExpanded,
+          driverPhone: _activeDriverPhone,
+          onOpenChat: _openDriverChat,
           onToggleExpand: () => setState(
             () => _enRoutePanelExpanded = !_enRoutePanelExpanded,
           ),
@@ -2007,6 +2381,8 @@ class _TripHomePageState extends State<TripHomePage>
         return DriverArrivedSheet(
           key: const ValueKey('driverArrived'),
           driverName: _activeDriverName ?? 'Motorista',
+          pickupAddress: _pickupAddress,
+          destinationAddress: _destinationAddress,
         );
       case TripFlowStep.tripStarted:
         return KeyedSubtree(
@@ -2021,14 +2397,13 @@ class _TripHomePageState extends State<TripHomePage>
           paymentMethod: 'À vista (PIX)',
         );
       case TripFlowStep.tripRating:
-        return _selectedDriver != null
-            ? TripRatingPanel(
-                key: const ValueKey('tripRating'),
-                driver: _selectedDriver!,
-                onClose: _onRatingClosed,
-                onSubmit: _onRatingSubmitted,
-              )
-            : const SizedBox.shrink(key: ValueKey('none'));
+        return TripRatingPanel(
+          key: const ValueKey('tripRating'),
+          driverName: _activeDriverName ?? _selectedDriver?.name ?? 'Motorista',
+          onClose: _onRatingClosed,
+          onSubmit: _onRatingSubmitted,
+          onReportProblem: _onReportProblem,
+        );
       default:
         return const SizedBox.shrink(key: ValueKey('none'));
     }
@@ -2103,6 +2478,7 @@ class _TripHomePageState extends State<TripHomePage>
     );
   }
 
+  // CHANGE 9: wrap TripBottomNav in BlocBuilder for scheduledCount
   Widget _buildBottomNav() {
     final show = _step == TripFlowStep.idle && !_isSearchActive;
     return AnimatedPositioned(
@@ -2111,19 +2487,26 @@ class _TripHomePageState extends State<TripHomePage>
       bottom: show ? 24 : -120,
       left: 20,
       right: 20,
-      child: TripBottomNav(
-        selectedIndex: _selectedNavIndex,
-        onItemSelected: (index) {
-          if (index == 2) {
-            context.go('/profile');
-          } else {
-            setState(() => _selectedNavIndex = index);
-          }
-          if (index == 1) {
-            context.go('/services');
-            return;
-          }
-          setState(() => _selectedNavIndex = index);
+      child: BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+        builder: (context, state) {
+          final count =
+              state is ScheduledTripsLoaded ? state.trips.length : 0;
+          return TripBottomNav(
+            selectedIndex: _selectedNavIndex,
+            scheduledCount: count,
+            onItemSelected: (index) {
+              if (index == 2) {
+                context.go('/profile');
+              } else {
+                setState(() => _selectedNavIndex = index);
+              }
+              if (index == 1) {
+                context.go('/services');
+                return;
+              }
+              setState(() => _selectedNavIndex = index);
+            },
+          );
         },
       ),
     );

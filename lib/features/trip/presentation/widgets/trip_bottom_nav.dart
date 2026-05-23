@@ -4,17 +4,20 @@ import 'package:kz_servicos_app/core/constants/app_colors.dart';
 class TripBottomNav extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
+  final int scheduledCount;
 
   const TripBottomNav({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
+    this.scheduledCount = 0,
   });
 
   static const _items = [
     (icon: Icons.local_taxi_rounded, label: 'Viagens'),
     (icon: Icons.work_rounded, label: 'Serviços'),
     (icon: Icons.person_rounded, label: 'Perfil'),
+    (icon: Icons.calendar_month_rounded, label: 'Agendamentos'),
   ];
 
   @override
@@ -39,6 +42,7 @@ class TripBottomNav extends StatelessWidget {
               icon: _items[i].icon,
               label: _items[i].label,
               isSelected: selectedIndex == i,
+              badgeCount: i == 3 ? scheduledCount : 0,
               onTap: () => onItemSelected(i),
             ),
           );
@@ -53,12 +57,14 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final int badgeCount;
 
   const _NavItem({
     required this.icon,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
@@ -67,38 +73,64 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
-          width: isSelected ? 56 : 44,
-          height: isSelected ? 56 : 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isSelected
-                ? AppColors.highlight.withValues(alpha: 0.85)
-                : Colors.transparent,
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.highlight.withValues(alpha: 0.40),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Center(
-            child: AnimatedScale(
-              scale: isSelected ? 1.15 : 0.9,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedContainer(
               duration: const Duration(milliseconds: 320),
               curve: Curves.easeOutCubic,
-              child: Icon(
-                icon,
-                color: isSelected ? Colors.white : Colors.black45,
-                size: 24,
+              width: isSelected ? 56 : 44,
+              height: isSelected ? 56 : 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? AppColors.highlight.withValues(alpha: 0.85)
+                    : Colors.transparent,
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.highlight.withValues(alpha: 0.40),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Center(
+                child: AnimatedScale(
+                  scale: isSelected ? 1.15 : 0.9,
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeOutCubic,
+                  child: Icon(
+                    icon,
+                    color: isSelected ? Colors.white : Colors.black45,
+                    size: 24,
+                  ),
+                ),
               ),
             ),
-          ),
+            if (badgeCount > 0)
+              Positioned(
+                top: -2,
+                right: -2,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '+$badgeCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -3,6 +3,16 @@ import 'dart:convert';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 
+class DirectionsResult {
+  final List<LatLng> points;
+  final int durationSeconds;
+
+  const DirectionsResult({
+    required this.points,
+    required this.durationSeconds,
+  });
+}
+
 class DirectionsService {
   static const String _apiKey = 'AIzaSyChT4wSYd-b3fT7xfEvUvmgJ0QfZv7MYSE';
 
@@ -47,6 +57,58 @@ class DirectionsService {
       return _decodePolyline(polyline);
     } catch (_) {
       return [];
+    }
+  }
+
+  Future<DirectionsResult> fetchRouteWithDuration({
+    required LatLng origin,
+    required LatLng destination,
+    List<LatLng> waypoints = const [],
+  }) async {
+    final params = <String, String>{
+      'origin': '${origin.latitude},${origin.longitude}',
+      'destination': '${destination.latitude},${destination.longitude}',
+      'key': _apiKey,
+      'language': 'pt-BR',
+    };
+    if (waypoints.isNotEmpty) {
+      params['waypoints'] =
+          waypoints.map((wp) => '${wp.latitude},${wp.longitude}').join('|');
+    }
+    final uri = Uri.https(
+      'maps.googleapis.com',
+      '/maps/api/directions/json',
+      params,
+    );
+
+    try {
+      final response = await _client.get(uri);
+      if (response.statusCode != 200) {
+        return const DirectionsResult(points: [], durationSeconds: 0);
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final routes = data['routes'] as List?;
+      if (routes == null || routes.isEmpty) {
+        return const DirectionsResult(points: [], durationSeconds: 0);
+      }
+
+      final route = routes[0] as Map<String, dynamic>;
+      final polyline = route['overview_polyline']['points'] as String;
+      final legs = route['legs'] as List?;
+      final durationSeconds =
+          (legs != null && legs.isNotEmpty)
+              ? ((legs[0] as Map<String, dynamic>)['duration']
+                      ?['value'] as int? ??
+                  0)
+              : 0;
+
+      return DirectionsResult(
+        points: _decodePolyline(polyline),
+        durationSeconds: durationSeconds,
+      );
+    } catch (_) {
+      return const DirectionsResult(points: [], durationSeconds: 0);
     }
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/profile/data/models/mock_message.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -15,8 +15,11 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late final MockConversation _conversation;
-  late final List<MockChatMessage> _messages;
+  final _supabase = Supabase.instance.client;
+
+  List<Map<String, dynamic>> _messages = [];
+  bool _isLoading = true;
+  RealtimeChannel? _channel;
 
   static const _presetMessages = [
     'Estou chegando',
@@ -25,35 +28,78 @@ class _ChatPageState extends State<ChatPage> {
     'Obrigado(a)!',
   ];
 
+  String get _currentUserId => _supabase.auth.currentUser?.id ?? '';
+
   @override
   void initState() {
     super.initState();
-    _conversation = MockConversation.samples.firstWhere(
-      (c) => c.id == widget.conversationId,
-      orElse: () => MockConversation.samples.first,
-    );
-    _messages = List.from(_conversation.messages);
+    _loadMessages();
+    _subscribeToMessages();
   }
 
   @override
   void dispose() {
+    _channel?.unsubscribe();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _sendMessage(String text) {
+  Future<void> _loadMessages() async {
+    try {
+      final data = await _supabase
+          .from('chat_messages')
+          .select('id, sender_id, message, created_at')
+          .eq('chat_room_id', widget.conversationId)
+          .order('created_at', ascending: true);
+      if (!mounted) return;
+      setState(() {
+        _messages = List<Map<String, dynamic>>.from(data as List);
+        _isLoading = false;
+      });
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _subscribeToMessages() {
+    _channel = _supabase
+        .channel('chat-${widget.conversationId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'chat_messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'chat_room_id',
+            value: widget.conversationId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            final newMsg = payload.newRecord;
+            // avoid duplicates if we inserted it ourselves
+            final alreadyExists = _messages.any((m) => m['id'] == newMsg['id']);
+            if (alreadyExists) return;
+            setState(() => _messages.add(Map<String, dynamic>.from(newMsg)));
+            _scrollToBottom();
+          },
+        )
+        .subscribe();
+  }
+
+  Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
-    setState(() {
-      _messages.add(MockChatMessage(
-        id: 'msg_new_${_messages.length}',
-        text: text.trim(),
-        isFromUser: true,
-        sentAt: DateTime.now(),
-      ));
-    });
     _messageController.clear();
-    _scrollToBottom();
+    try {
+      await _supabase.from('chat_messages').insert({
+        'chat_room_id': widget.conversationId,
+        'sender_id': _currentUserId,
+        'message': text.trim(),
+        'message_type': 'text',
+      });
+    } catch (_) {}
   }
 
   void _scrollToBottom() {
@@ -61,7 +107,7 @@ class _ChatPageState extends State<ChatPage> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
@@ -71,181 +117,118 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.black87),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text(
+          'Chat',
+          style: TextStyle(
+            color: Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
       body: Column(
         children: [
-          SizedBox(height: MediaQuery.of(context).padding.top + 8),
-          _buildHeader(context),
-          Expanded(child: _buildMessagesList()),
-          _buildPresetBar(),
-          _buildInputBar(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 22,
-              color: Color(0xFF999999),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.support_agent_rounded,
-              color: AppColors.secondary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'KZ Serviços',
-                  style: TextStyle(
-                    fontFamily: 'OutfitBlack',
-                    fontSize: 16,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  '${_conversation.origin} → ${_conversation.destination}',
-                  style: const TextStyle(
-                    fontFamily: 'QuasimodoSemiBold',
-                    fontSize: 11,
-                    color: Color(0xFF999999),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _messages.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Nenhuma mensagem ainda.\nEnvie a primeira!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.black45, fontSize: 14),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = _messages[index];
+                          final isMe = msg['sender_id'] == _currentUserId;
+                          return _MessageBubble(
+                            text: msg['message'] as String? ?? '',
+                            isMe: isMe,
+                          );
+                        },
+                      ),
           ),
+          _buildPresetMessages(),
+          _buildInputBar(),
         ],
       ),
     );
   }
 
-  Widget _buildMessagesList() {
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: _messages.length,
-      itemBuilder: (context, index) {
-        final msg = _messages[index];
-        return _MessageBubble(message: msg);
-      },
-    );
-  }
-
-  Widget _buildPresetBar() {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _presetMessages.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onTap: () => _sendMessage(_presetMessages[index]),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE0E0E0)),
-              ),
-              child: Text(
-                _presetMessages[index],
-                style: const TextStyle(
-                  fontFamily: 'QuasimodoSemiBold',
-                  fontSize: 12,
-                  color: AppColors.textPrimary,
+  Widget _buildPresetMessages() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: _presetMessages.map((msg) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => _sendMessage(msg),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.highlight.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: AppColors.highlight.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  msg,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.highlight,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildInputBar(BuildContext context) {
+  Widget _buildInputBar() {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        MediaQuery.of(context).padding.bottom + 12,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.fromLTRB(12, 8, 12, bottomPadding + 8),
+      color: Colors.white,
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: TextField(
-                controller: _messageController,
-                decoration: const InputDecoration(
-                  hintText: 'Digite uma mensagem...',
-                  hintStyle: TextStyle(
-                    fontFamily: 'QuasimodoSemiBold',
-                    fontSize: 14,
-                    color: Color(0xFF999999),
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 10),
+            child: TextField(
+              controller: _messageController,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'Digite uma mensagem...',
+                hintStyle:
+                    const TextStyle(color: Colors.black38, fontSize: 14),
+                filled: true,
+                fillColor: const Color(0xFFF5F5F5),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
-                style: const TextStyle(
-                  fontFamily: 'QuasimodoSemiBold',
-                  fontSize: 14,
-                  color: AppColors.textPrimary,
-                ),
-                onSubmitted: _sendMessage,
               ),
+              onSubmitted: _sendMessage,
             ),
           ),
           const SizedBox(width: 8),
@@ -255,7 +238,7 @@ class _ChatPageState extends State<ChatPage> {
               width: 44,
               height: 44,
               decoration: const BoxDecoration(
-                color: AppColors.secondary,
+                color: AppColors.highlight,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -272,88 +255,45 @@ class _ChatPageState extends State<ChatPage> {
 }
 
 class _MessageBubble extends StatelessWidget {
-  final MockChatMessage message;
+  final String text;
+  final bool isMe;
 
-  const _MessageBubble({required this.message});
+  const _MessageBubble({required this.text, required this.isMe});
 
   @override
   Widget build(BuildContext context) {
-    final isUser = message.isFromUser;
-    final hour = message.sentAt.hour.toString().padLeft(2, '0');
-    final minute = message.sentAt.minute.toString().padLeft(2, '0');
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isUser) ...[
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.support_agent_rounded,
-                color: AppColors.secondary,
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: isUser ? AppColors.secondary : AppColors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isUser ? 16 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 16),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0A000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    message.text,
-                    style: TextStyle(
-                      fontFamily: 'QuasimodoSemiBold',
-                      fontSize: 13,
-                      color: isUser ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$hour:$minute',
-                    style: TextStyle(
-                      fontFamily: 'QuasimodoSemiBold',
-                      fontSize: 10,
-                      color: isUser
-                          ? Colors.white.withValues(alpha: 0.7)
-                          : const Color(0xFF999999),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
+        ),
+        decoration: BoxDecoration(
+          color: isMe ? AppColors.highlight : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isMe ? 18 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 18),
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            color: isMe ? Colors.white : Colors.black87,
+            height: 1.4,
+          ),
+        ),
       ),
     );
   }

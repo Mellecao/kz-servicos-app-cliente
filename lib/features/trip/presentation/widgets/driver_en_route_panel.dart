@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DriverEnRoutePanel extends StatelessWidget {
   final MockDriver driver;
   final int etaMinutes;
   final bool isExpanded;
   final VoidCallback onToggleExpand;
+  final String? driverPhone;
+  final VoidCallback? onOpenChat;
 
   const DriverEnRoutePanel({
     super.key,
@@ -14,6 +17,8 @@ class DriverEnRoutePanel extends StatelessWidget {
     required this.etaMinutes,
     this.isExpanded = false,
     required this.onToggleExpand,
+    this.driverPhone,
+    this.onOpenChat,
   });
 
   @override
@@ -54,9 +59,7 @@ class DriverEnRoutePanel extends StatelessWidget {
 
   Widget _buildMinimizedContent() {
     final firstName = driver.name.split(' ').first;
-    final statusText = etaMinutes > 0
-        ? '$firstName está a caminho'
-        : 'Viagem em andamento';
+    final statusText = '$firstName está indo até você';
 
     return Column(
       children: [
@@ -143,6 +146,7 @@ class DriverEnRoutePanel extends StatelessWidget {
       children: [
         _buildGrabber(),
         _buildExpandedHeader(),
+        _buildActionButtons(),
         Expanded(child: _buildDriverProfile()),
       ],
     );
@@ -217,6 +221,38 @@ class DriverEnRoutePanel extends StatelessWidget {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Row(
+        children: [
+          if (driverPhone != null) ...[
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.phone_rounded,
+                label: 'Ligar',
+                color: const Color(0xFF22C55E),
+                onTap: () async {
+                  final uri = Uri.parse('tel:$driverPhone');
+                  if (await canLaunchUrl(uri)) launchUrl(uri);
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: _ActionButton(
+              icon: Icons.chat_rounded,
+              label: 'Chat',
+              color: AppColors.highlight,
+              onTap: () => onOpenChat?.call(),
+            ),
+          ),
         ],
       ),
     );
@@ -346,6 +382,50 @@ class DriverEnRoutePanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.grey[300],
           borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
         ),
       ),
     );

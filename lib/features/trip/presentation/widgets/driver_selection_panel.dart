@@ -6,11 +6,13 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 class DriverSelectionPanel extends StatefulWidget {
   final List<DriverCandidate> candidates;
   final ValueChanged<DriverCandidate> onDriverAccepted;
+  final ValueChanged<DriverCandidate>? onDriverRejected;
 
   const DriverSelectionPanel({
     super.key,
     required this.candidates,
     required this.onDriverAccepted,
+    this.onDriverRejected,
   });
 
   @override
@@ -47,6 +49,10 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
           onAccept: () {
             Navigator.of(context).pop();
             widget.onDriverAccepted(candidate);
+          },
+          onReject: () {
+            Navigator.of(context).pop();
+            widget.onDriverRejected?.call(candidate);
           },
         ),
       ),
@@ -288,10 +294,12 @@ class _DriverCard extends StatelessWidget {
 class _DriverProfileSheet extends StatelessWidget {
   final DriverCandidate candidate;
   final VoidCallback onAccept;
+  final VoidCallback onReject;
 
   const _DriverProfileSheet({
     required this.candidate,
     required this.onAccept,
+    required this.onReject,
   });
 
   @override
@@ -458,23 +466,46 @@ class _DriverProfileSheet extends StatelessWidget {
   Widget _buildAcceptButton() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-      child: SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: onAccept,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.highlight,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: onAccept,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.highlight,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Selecionar motorista',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
             ),
           ),
-          child: const Text(
-            'Selecionar motorista',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton(
+              onPressed: onReject,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red.shade600,
+                side: BorderSide(color: Colors.red.shade300),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Recusar motorista',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

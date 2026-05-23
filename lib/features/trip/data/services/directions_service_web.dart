@@ -3,6 +3,16 @@ import 'dart:js_interop';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/features/trip/data/services/google_maps_js_types.dart';
 
+class DirectionsResult {
+  final List<LatLng> points;
+  final int durationSeconds;
+
+  const DirectionsResult({
+    required this.points,
+    required this.durationSeconds,
+  });
+}
+
 class DirectionsService {
   final JsDirectionsSvc _service = JsDirectionsSvc();
 
@@ -47,5 +57,18 @@ class DirectionsService {
     } catch (_) {
       return [];
     }
+  }
+
+  Future<DirectionsResult> fetchRouteWithDuration({
+    required LatLng origin,
+    required LatLng destination,
+    List<LatLng> waypoints = const [],
+  }) async {
+    final points = await fetchRoute(
+      origin: origin,
+      destination: destination,
+      waypoints: waypoints,
+    );
+    return DirectionsResult(points: points, durationSeconds: 0);
   }
 }
