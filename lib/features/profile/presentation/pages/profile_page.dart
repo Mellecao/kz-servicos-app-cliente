@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -185,13 +184,13 @@ class _ProfilePageState extends State<ProfilePage> {
       final userId = authState.user.id;
 
       final supabase = Supabase.instance.client;
-      final file = File(picked.path);
       final ext = picked.path.split('.').last.toLowerCase();
       final storagePath = 'users/$userId/avatar.$ext';
+      final bytes = await picked.readAsBytes();
 
-      await supabase.storage.from('Profile_Images').upload(
+      await supabase.storage.from('Profile_Images').uploadBinary(
         storagePath,
-        file,
+        bytes,
         fileOptions: const FileOptions(upsert: true),
       );
 
