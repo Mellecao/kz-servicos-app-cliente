@@ -25,7 +25,7 @@ class _SplashPageState extends State<SplashPage> {
     if (!mounted) return;
     final state = context.read<AuthCubit>().state;
     if (state is AuthSuccess) {
-      context.go('/home');
+      context.go('/trip');
     } else {
       context.go('/login');
     }
