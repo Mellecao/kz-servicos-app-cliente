@@ -2133,10 +2133,7 @@ class _TripHomePageState extends State<TripHomePage>
         child: GestureDetector(
           onTap: _openSearch,
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 18,
-            ),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.highlight,
               borderRadius: BorderRadius.circular(9999),
@@ -2148,18 +2145,25 @@ class _TripHomePageState extends State<TripHomePage>
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.9)),
-                const SizedBox(width: 12),
-                Text(
-                  'Para onde vamos hoje?',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white.withValues(alpha: 0.85),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(9999),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.search_rounded, color: Colors.black45),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Para onde vamos hoje?',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black.withValues(alpha: 0.35),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
