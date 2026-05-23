@@ -360,7 +360,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           Positioned(
-            bottom: MediaQuery.of(context).padding.bottom + 12,
+            bottom: 24,
             left: 20,
             right: 20,
             child: TripBottomNav(
