@@ -1277,7 +1277,9 @@ class _TripHomePageState extends State<TripHomePage>
           );
       if (!mounted) return;
       _loadScheduledTrips();
+      final confirmedTripId = candidate.tripId;
       _finishScheduledTripFlow();
+      _subscribeToConfirmedTrip(confirmedTripId);
     } on Exception catch (e) {
       if (!mounted) return;
       setState(() => _step = TripFlowStep.driverSelection);
@@ -1583,6 +1585,36 @@ class _TripHomePageState extends State<TripHomePage>
       _activeDriverPhone = null;
     });
     context.read<TripCreationCubit>().reset();
+  }
+
+  void _subscribeToConfirmedTrip(String tripId) {
+    _tripChannel?.unsubscribe();
+    final supabase = Supabase.instance.client;
+    debugPrint('[KZ-C] _subscribeToConfirmedTrip: $tripId');
+    _tripChannel = supabase
+        .channel('confirmed-trip-$tripId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'trips',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: tripId,
+          ),
+          callback: (payload) {
+            final status = payload.newRecord['status'] as String?;
+            final driverProfileId =
+                payload.newRecord['driver_profile_id'] as String?;
+            debugPrint('[KZ-C] confirmed trip update: status=$status');
+            if (status == 'started' && driverProfileId != null && mounted) {
+              _tripChannel?.unsubscribe();
+              _tripChannel = null;
+              _fetchDriverNameAndStartTracking(tripId, driverProfileId);
+            }
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _onDriverRejected(DriverCandidate candidate) async {
@@ -2133,7 +2165,7 @@ class _TripHomePageState extends State<TripHomePage>
         child: GestureDetector(
           onTap: _openSearch,
           child: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: AppColors.highlight,
               borderRadius: BorderRadius.circular(9999),
