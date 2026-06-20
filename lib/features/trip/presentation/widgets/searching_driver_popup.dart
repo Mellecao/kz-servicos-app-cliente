@@ -3,8 +3,13 @@ import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
 class SearchingDriverSheet extends StatefulWidget {
   final VoidCallback onCancel;
+  final VoidCallback? onGoHome;
 
-  const SearchingDriverSheet({super.key, required this.onCancel});
+  const SearchingDriverSheet({
+    super.key,
+    required this.onCancel,
+    this.onGoHome,
+  });
 
   @override
   State<SearchingDriverSheet> createState() => _SearchingDriverSheetState();
@@ -28,12 +33,10 @@ class _SearchingDriverSheetState extends State<SearchingDriverSheet>
       vsync: this,
       duration: const Duration(milliseconds: 380),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     _slideController.forward();
   }
@@ -106,6 +109,32 @@ class _SearchingDriverSheetState extends State<SearchingDriverSheet>
                 ],
               ),
               const SizedBox(height: 24),
+              if (widget.onGoHome != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: widget.onGoHome,
+                    icon: const Icon(Icons.home_rounded, size: 20),
+                    label: const Text(
+                      'Ir para home',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.highlight,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -120,10 +149,7 @@ class _SearchingDriverSheetState extends State<SearchingDriverSheet>
                   ),
                   child: const Text(
                     'Cancelar pedido',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -170,7 +196,7 @@ class _RadarPainter extends CustomPainter {
       center,
       5,
       Paint()
-        ..color = AppColors.secondary
+        ..color = AppColors.highlight
         ..style = PaintingStyle.fill,
     );
 
@@ -184,7 +210,7 @@ class _RadarPainter extends CustomPainter {
         center,
         radius,
         Paint()
-          ..color = AppColors.secondary.withValues(alpha: opacity * 0.55)
+          ..color = AppColors.highlight.withValues(alpha: opacity * 0.55)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5,
       );

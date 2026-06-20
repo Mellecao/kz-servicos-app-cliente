@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
-import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
 
 class TripRatingPanel extends StatefulWidget {
-  final MockDriver driver;
+  final String driverName;
   final VoidCallback onClose;
+  final VoidCallback onReportProblem;
   final void Function(int rating, String comment) onSubmit;
+  final String? driverAvatarUrl;
 
   const TripRatingPanel({
     super.key,
-    required this.driver,
+    required this.driverName,
     required this.onClose,
+    required this.onReportProblem,
     required this.onSubmit,
+    this.driverAvatarUrl,
   });
 
   @override
@@ -21,6 +24,14 @@ class TripRatingPanel extends StatefulWidget {
 class _TripRatingPanelState extends State<TripRatingPanel> {
   int _selectedStars = 0;
   final TextEditingController _commentController = TextEditingController();
+
+  String get _initials {
+    final parts = widget.driverName.trim().split(' ');
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
+  }
 
   @override
   void dispose() {
@@ -74,9 +85,9 @@ class _TripRatingPanelState extends State<TripRatingPanel> {
             const SizedBox(height: 4),
             _buildAvatar(),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Gostou da viagem?',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Colors.black87,
@@ -84,7 +95,7 @@ class _TripRatingPanelState extends State<TripRatingPanel> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Avalie o serviço de ${widget.driver.name.split(' ').first}',
+              'Avalie o serviço de ${widget.driverName.split(' ').first}',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.black.withValues(alpha: 0.5),
@@ -146,7 +157,24 @@ class _TripRatingPanelState extends State<TripRatingPanel> {
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
             ],
+            TextButton.icon(
+              onPressed: widget.onReportProblem,
+              icon: const Icon(
+                Icons.report_problem_outlined,
+                size: 18,
+                color: Color(0xFFE74C3C),
+              ),
+              label: const Text(
+                'Reportar problema',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFE74C3C),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -178,16 +206,27 @@ class _TripRatingPanelState extends State<TripRatingPanel> {
   }
 
   Widget _buildAvatar() {
+    const size = 64.0;
+    final avatarUrl = widget.driverAvatarUrl;
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: size / 2,
+        backgroundImage: NetworkImage(avatarUrl),
+        backgroundColor: AppColors.highlight.withValues(alpha: 0.15),
+        onBackgroundImageError: (_, __) {},
+        child: null,
+      );
+    }
     return Container(
-      width: 64,
-      height: 64,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.highlight.withValues(alpha: 0.15),
       ),
       child: Center(
         child: Text(
-          widget.driver.initials,
+          _initials,
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,

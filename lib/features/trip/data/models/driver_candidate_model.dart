@@ -14,6 +14,7 @@ class DriverCandidateModel {
     this.vehicleColor,
     this.vehiclePlate,
     this.offeredPrice,
+    this.photoUrls = const [],
   });
 
   final String candidateId;
@@ -29,6 +30,7 @@ class DriverCandidateModel {
   final String? vehicleColor;
   final String? vehiclePlate;
   final double? offeredPrice;
+  final List<String> photoUrls;
 
   factory DriverCandidateModel.fromJson(Map<String, dynamic> json) {
     final driverProfile = json['driver_profiles'] as Map<String, dynamic>?;
@@ -40,10 +42,31 @@ class DriverCandidateModel {
     Map<String, dynamic>? vehicle;
     if (vehicles != null && vehicles.isNotEmpty) {
       vehicle = vehicles.cast<Map<String, dynamic>>().firstWhere(
-            (v) => v['is_active'] == true,
-            orElse: () => vehicles.first as Map<String, dynamic>,
-          );
+        (v) => v['is_active'] == true,
+        orElse: () => vehicles.first as Map<String, dynamic>,
+      );
     }
+    final vehiclePhotos = vehicle?['vehicle_photos'] as List<dynamic>?;
+    final driverPhotos =
+        driverProfile?['driver_profile_photos'] as List<dynamic>?;
+    final photoUrls = <String>[
+      if ((user?['avatar_url'] as String?)?.isNotEmpty == true)
+        user!['avatar_url'] as String,
+      if (driverPhotos != null)
+        ...driverPhotos
+            .map(
+              (item) => (item as Map<String, dynamic>)['photo_url'] as String?,
+            )
+            .whereType<String>()
+            .where((url) => url.isNotEmpty),
+      if (vehiclePhotos != null)
+        ...vehiclePhotos
+            .map(
+              (item) => (item as Map<String, dynamic>)['photo_url'] as String?,
+            )
+            .whereType<String>()
+            .where((url) => url.isNotEmpty),
+    ];
 
     return DriverCandidateModel(
       candidateId: json['id'] as String,
@@ -58,21 +81,23 @@ class DriverCandidateModel {
       vehicleColor: vehicle?['color'] as String?,
       vehiclePlate: vehicle?['license_plate'] as String?,
       offeredPrice: (json['offered_price'] as num?)?.toDouble(),
+      photoUrls: photoUrls,
     );
   }
 
   DriverCandidate toEntity() => DriverCandidate(
-        candidateId: candidateId,
-        tripId: tripId,
-        driverProfileId: driverProfileId,
-        driverName: driverName,
-        avatarUrl: avatarUrl,
-        vehicleId: vehicleId,
-        vehicleBrand: vehicleBrand,
-        vehicleModel: vehicleModel,
-        vehicleYear: vehicleYear,
-        vehicleColor: vehicleColor,
-        vehiclePlate: vehiclePlate,
-        offeredPrice: offeredPrice,
-      );
+    candidateId: candidateId,
+    tripId: tripId,
+    driverProfileId: driverProfileId,
+    driverName: driverName,
+    avatarUrl: avatarUrl,
+    vehicleId: vehicleId,
+    vehicleBrand: vehicleBrand,
+    vehicleModel: vehicleModel,
+    vehicleYear: vehicleYear,
+    vehicleColor: vehicleColor,
+    vehiclePlate: vehiclePlate,
+    offeredPrice: offeredPrice,
+    photoUrls: photoUrls,
+  );
 }

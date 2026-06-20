@@ -1,0 +1,126 @@
+================================================================
+  KZ SERVIÇOS - CLIENTE | BACKEND SETUP: PUSH NOTIFICATIONS
+================================================================
+Data: 18/05/2026
+Autor: Claude (implementação automática)
+
+IMPORTANTE
+----------
+A API usada é FCM V1 (OAuth2 via Service Account).
+A chave VAPID (Certificados push da Web) serve APENAS para browsers.
+Para Android/iOS use o arquivo Service Account JSON do Firebase.
+
+
+PASSO 1 — GERAR SERVICE ACCOUNT NO FIREBASE
+--------------------------------------------
+1. Firebase Console -> seu projeto -> Configurações do projeto (ícone de engrenagem)
+2. Aba "Contas de serviço"
+3. Clique em "Gerar nova chave privada" -> confirme
+4. Um arquivo .json será baixado. GUARDE COM SEGURANÇA. Não commite no git.
+
+Formato do arquivo gerado:
+{
+  "type": "service_account",
+  "project_id": "kz-servicos-cliente",
+  "private_key_id": "...",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-xxxxx@kz-servicos-cliente.iam.gserviceaccount.com",
+  ...
+}
+
+
+PASSO 2 — SECRET NO SUPABASE
+-----------------------------
+1. Supabase Dashboard -> Settings -> Edge Functions -> Secrets
+2. Adicione:
+   Name:  FIREBASE_SERVICE_ACCOUNT
+   Value: conteúdo completo do arquivo JSON gerado no Passo 1
+
+
+PASSO 3 — MIGRATION: COLUNA fcm_token
+--------------------------------------
+No Supabase -> SQL Editor, execute:
+
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT;
+
+Arquivo: supabase/migrations/20260518000001_add_fcm_token_to_users.sql
+
+
+PASSO 4 — EXTENSÃO pg_net (necessária para o trigger HTTP)
+-----------------------------------------------------------
+No SQL Editor, execute:
+
+  CREATE EXTENSION IF NOT EXISTS pg_net;
+
+
+PASSO 5 — VARIÁVEIS DO TRIGGER
+-------------------------------
+No SQL Editor, execute (substitua os valores reais):
+
+  ALTER DATABASE postgres SET app.supabase_url = 'https://wmlsiwjrgjygqdjtsayt.supabase.co';
+  ALTER DATABASE postgres SET app.service_role_key = 'SUA_SERVICE_ROLE_KEY_AQUI';
+
+A service_role_key está em:
+  Supabase -> Settings -> API -> campo "service_role" -> clique em "Reveal"
+
+
+PASSO 6 — MIGRATION: TRIGGER DE STATUS
+---------------------------------------
+No SQL Editor, execute o conteúdo de:
+  supabase/migrations/20260518000002_trip_status_notification_trigger.sql
+
+Esse trigger chama a Edge Function automaticamente sempre que
+o campo `status` da tabela `trips` for atualizado.
+
+
+PASSO 7 — DEPLOY DA EDGE FUNCTION
+-----------------------------------
+No terminal, dentro da pasta raiz do projeto Flutter:
+
+  supabase login
+  supabase functions deploy send-trip-notification --project-ref wmlsiwjrgjygqdjtsayt
+
+A Edge Function está em:
+  supabase/functions/send-trip-notification/index.ts
+
+
+PASSO 8 — INSTALAR PACOTES FLUTTER (se necessário)
+----------------------------------------------------
+  flutter pub get
+
+Pacotes adicionados:
+  - firebase_messaging: ^16.2.2
+  - flutter_local_notifications: ^18.0.1
+
+
+PASSO 9 — iOS: CONFIGURAR APNs (para notificações no iPhone)
+-------------------------------------------------------------
+1. Firebase Console -> Configurações do projeto -> Cloud Messaging -> seção iOS
+2. Faça upload da APNs Authentication Key (.p8)
+   Gerada em: developer.apple.com -> Certificates, Identifiers & Profiles -> Keys
+   Selecione "Apple Push Notifications service (APNs)"
+
+
+NOTIFICAÇÕES DISPARADAS
+-----------------------
+Status da corrida       | Notificação enviada
+------------------------|-----------------------------------------------
+searching_drivers       | Buscando motorista para sua viagem
+awaiting_client_conf.   | Motorista encontrado! Confirme para prosseguir
+awaiting_driver_conf.   | Aguardando confirmação final do motorista
+scheduled               | Viagem confirmada com o motorista
+started                 | Sua viagem começou. Boa viagem!
+completed               | Viagem concluída. Obrigado!
+cancelled               | Viagem cancelada
+
+
+FLUXO TÉCNICO
+-------------
+1. Usuário faz login -> NotificationService salva fcm_token em users.fcm_token
+2. Driver/admin muda status da corrida na tabela trips
+3. Trigger PostgreSQL detecta mudança -> chama Edge Function via pg_net
+4. Edge Function busca fcm_token do cliente, gera token OAuth2 via Service Account
+5. Envia notificação via FCM V1 API (https://fcm.googleapis.com/v1/...)
+6. Dispositivo Android/iOS recebe a push notification
+
+================================================================

@@ -1,20 +1,23 @@
 import 'dart:js_interop';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:kz_servicos_app/features/trip/data/services/google_maps_js_types.dart';
 
 class GeocodingService {
   final JsGeocoder _geocoder = JsGeocoder();
 
-  GeocodingService({dynamic client});
+  GeocodingService({http.Client? client});
 
   Future<String?> reverseGeocode(LatLng position) async {
-    final request = <String, Object>{
-      'location': <String, Object>{
-        'lat': position.latitude,
-        'lng': position.longitude,
-      },
-    }.jsify() as JSObject;
+    final request =
+        <String, Object>{
+              'location': <String, Object>{
+                'lat': position.latitude,
+                'lng': position.longitude,
+              },
+            }.jsify()
+            as JSObject;
 
     try {
       final response = await _geocoder.geocode(request).toDart;

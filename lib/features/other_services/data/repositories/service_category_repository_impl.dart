@@ -4,7 +4,7 @@ import 'package:kz_servicos_app/features/other_services/data/repositories/servic
 
 class ServiceCategoryRepositoryImpl implements ServiceCategoryRepository {
   ServiceCategoryRepositoryImpl({required SupabaseClient client})
-      : _client = client;
+    : _client = client;
 
   final SupabaseClient _client;
 
@@ -19,8 +19,20 @@ class ServiceCategoryRepositoryImpl implements ServiceCategoryRepository {
         .eq('is_active', true)
         .order('name');
 
-    return response
+    final categories = response
         .map((json) => ServiceCategory.fromJson(json))
         .toList();
+    const priority = {
+      'gestao-de-obra': 0,
+      'gestao_de_obra': 0,
+      'churrasqueiro': 1,
+    };
+    categories.sort((a, b) {
+      final aPriority = priority[a.slug] ?? 100;
+      final bPriority = priority[b.slug] ?? 100;
+      if (aPriority != bPriority) return aPriority.compareTo(bPriority);
+      return a.name.compareTo(b.name);
+    });
+    return categories;
   }
 }

@@ -17,6 +17,7 @@ class DriverCandidate extends Equatable {
     this.vehicleColor,
     this.vehiclePlate,
     this.offeredPrice,
+    this.photoUrls = const [],
   });
 
   final String candidateId;
@@ -32,6 +33,7 @@ class DriverCandidate extends Equatable {
   final String? vehicleColor;
   final String? vehiclePlate;
   final double? offeredPrice;
+  final List<String> photoUrls;
 
   String? get vehicleSummary {
     if (vehicleBrand == null && vehicleModel == null) return null;
@@ -44,8 +46,10 @@ class DriverCandidate extends Equatable {
   }
 
   String get initials {
-    final parts =
-        driverName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    final parts = driverName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty);
     if (parts.isEmpty) return '?';
     final first = parts.first[0].toUpperCase();
     if (parts.length == 1) return first;
@@ -54,5 +58,5 @@ class DriverCandidate extends Equatable {
   }
 
   @override
-  List<Object?> get props => [candidateId, tripId, driverProfileId];
+  List<Object?> get props => [candidateId, tripId, driverProfileId, photoUrls];
 }

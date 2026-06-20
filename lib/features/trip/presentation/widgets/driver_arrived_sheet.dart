@@ -10,6 +10,7 @@ class DriverArrivedSheet extends StatefulWidget {
   final int? passengerCount;
   final String? driverPhone;
   final VoidCallback? onOpenChat;
+  final String? driverAvatarUrl;
 
   const DriverArrivedSheet({
     super.key,
@@ -20,6 +21,7 @@ class DriverArrivedSheet extends StatefulWidget {
     this.passengerCount,
     this.driverPhone,
     this.onOpenChat,
+    this.driverAvatarUrl,
   });
 
   @override
@@ -64,19 +66,7 @@ class _DriverArrivedSheetState extends State<DriverArrivedSheet> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2ECC71).withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.directions_car_rounded,
-                  color: Color(0xFF2ECC71),
-                  size: 22,
-                ),
-              ),
+              _buildAvatar(),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -200,6 +190,33 @@ class _DriverArrivedSheetState extends State<DriverArrivedSheet> {
             ],
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    const size = 44.0;
+    final avatarUrl = widget.driverAvatarUrl;
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: size / 2,
+        backgroundImage: NetworkImage(avatarUrl),
+        backgroundColor: const Color(0xFF2ECC71).withValues(alpha: 0.12),
+        onBackgroundImageError: (_, __) {},
+        child: null,
+      );
+    }
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2ECC71).withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(
+        Icons.directions_car_rounded,
+        color: Color(0xFF2ECC71),
+        size: 22,
       ),
     );
   }

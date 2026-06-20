@@ -2,10 +2,9 @@ import 'dart:convert';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:kz_servicos_app/core/maps/google_maps_api_key.dart';
 
 class PlaceDetailsService {
-  static const String _apiKey = 'AIzaSyChT4wSYd-b3fT7xfEvUvmgJ0QfZv7MYSE';
-
   final http.Client _client;
 
   PlaceDetailsService({http.Client? client})
@@ -18,7 +17,7 @@ class PlaceDetailsService {
       {
         'place_id': placeId,
         'fields': 'geometry',
-        'key': _apiKey,
+        'key': GoogleMapsApiKey.value,
       },
     );
 
@@ -30,8 +29,7 @@ class PlaceDetailsService {
       final result = data['result'] as Map<String, dynamic>?;
       if (result == null) return null;
 
-      final location =
-          result['geometry']?['location'] as Map<String, dynamic>?;
+      final location = result['geometry']?['location'] as Map<String, dynamic>?;
       if (location == null) return null;
 
       return LatLng(

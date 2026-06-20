@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
-import 'package:kz_servicos_app/features/auth/presentation/widgets/apple_sign_in_button.dart';
-import 'package:kz_servicos_app/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 class RegisterBottomSheet extends StatefulWidget {
   const RegisterBottomSheet({super.key});
@@ -56,17 +54,6 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
             const SizedBox(height: 28),
             _buildRegisterButton(),
             const SizedBox(height: 16),
-            _buildDivider(),
-            const SizedBox(height: 16),
-            GoogleSignInButton(
-              onPressed: () {},
-              label: 'Registrar-se com Google',
-            ),
-            const SizedBox(height: 12),
-            AppleSignInButton(
-              onPressed: () {},
-              label: 'Registrar-se com Apple',
-            ),
           ],
         ),
       ),
@@ -114,10 +101,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
       controller: _nameController,
       textCapitalization: TextCapitalization.words,
       style: _fieldTextStyle(),
-      decoration: _inputDecoration(
-        hint: 'Nome',
-        icon: Icons.person_outline,
-      ),
+      decoration: _inputDecoration(hint: 'Nome', icon: Icons.person_outline),
     );
   }
 
@@ -126,10 +110,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       style: _fieldTextStyle(),
-      decoration: _inputDecoration(
-        hint: 'E-mail',
-        icon: Icons.email_outlined,
-      ),
+      decoration: _inputDecoration(hint: 'E-mail', icon: Icons.email_outlined),
     );
   }
 
@@ -161,8 +142,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
             color: Colors.grey[400],
             size: 20,
           ),
-          onPressed: () =>
-              setState(() => _obscurePassword = !_obscurePassword),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
       ),
     );
@@ -189,26 +169,6 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
         ),
         child: const Text('Registrar-se'),
       ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: Colors.grey[300])),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'ou',
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamilyBody,
-              color: Colors.grey[400],
-              fontSize: 14,
-            ),
-          ),
-        ),
-        Expanded(child: Divider(color: Colors.grey[300])),
-      ],
     );
   }
 
@@ -240,15 +200,9 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: AppColors.highlight,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: AppColors.highlight, width: 1.5),
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       prefixIcon: Icon(icon, color: Colors.grey[400], size: 20),
       suffixIcon: suffixIcon,
     );

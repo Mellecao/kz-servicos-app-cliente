@@ -1,11 +1,12 @@
 {
-    "name": "kz_servicos_app",
-    "short_name": "kz_servicos_app",
+    "name": "KZ Serviços",
+    "short_name": "KZ Serviços",
+    "id": "/",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#0D5C63",
+    "description": "Solicite viagens e serviços pelo app KZ Serviços.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

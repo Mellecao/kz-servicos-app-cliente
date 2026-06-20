@@ -1,4 +1,5 @@
 import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
+import 'package:kz_servicos_app/core/utils/brazil_time.dart';
 
 class ScheduledTripModel {
   const ScheduledTripModel({
@@ -44,7 +45,7 @@ class ScheduledTripModel {
       id: json['id'] as String,
       status: json['status'] as String? ?? 'open',
       scheduledDatetime:
-          DateTime.parse(json['scheduled_datetime'] as String),
+          BrazilTime.fromBackend(json['scheduled_datetime'] as String),
       origin: _buildShortAddress(pickup),
       destination: _buildShortAddress(dropoff),
       originLat: _toDouble(pickup?['latitude']),

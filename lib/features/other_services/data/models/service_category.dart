@@ -66,4 +66,7 @@ const Map<String, _SlugVisual> _slugVisualMap = {
   'pest_control': _SlugVisual(Icons.pest_control, Color(0xFF7CB342)),
   'diarista': _SlugVisual(Icons.cleaning_services, Color(0xFF43A047)),
   'motorista': _SlugVisual(Icons.directions_car, Color(0xFF1565C0)),
+  'gestao-de-obra': _SlugVisual(Icons.engineering, Color(0xFF3949AB)),
+  'gestao_de_obra': _SlugVisual(Icons.engineering, Color(0xFF3949AB)),
+  'churrasqueiro': _SlugVisual(Icons.outdoor_grill, Color(0xFFE53935)),
 };

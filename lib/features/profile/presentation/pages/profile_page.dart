@@ -215,9 +215,10 @@ class _ProfilePageState extends State<ProfilePage> {
       debugPrint('[KZ] avatar upload erro: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erro ao salvar foto. Tente novamente.'),
+        SnackBar(
+          content: Text('Erro: $e'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 10),
         ),
       );
     }

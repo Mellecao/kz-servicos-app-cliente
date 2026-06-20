@@ -1,21 +1,24 @@
 import 'dart:js_interop';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:kz_servicos_app/features/trip/data/services/google_maps_js_types.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
 
 class GeocodingAddressService {
   final JsGeocoder _geocoder = JsGeocoder();
 
-  GeocodingAddressService({dynamic client});
+  GeocodingAddressService({http.Client? client});
 
   Future<TripAddress?> reverseGeocodeToAddress(LatLng position) async {
-    final request = <String, Object>{
-      'location': <String, Object>{
-        'lat': position.latitude,
-        'lng': position.longitude,
-      },
-    }.jsify() as JSObject;
+    final request =
+        <String, Object>{
+              'location': <String, Object>{
+                'lat': position.latitude,
+                'lng': position.longitude,
+              },
+            }.jsify()
+            as JSObject;
 
     try {
       final response = await _geocoder.geocode(request).toDart;
@@ -29,9 +32,7 @@ class GeocodingAddressService {
   }
 
   Future<TripAddress?> getAddressFromPlaceId(String placeId) async {
-    final request = <String, Object>{
-      'placeId': placeId,
-    }.jsify() as JSObject;
+    final request = <String, Object>{'placeId': placeId}.jsify() as JSObject;
 
     try {
       final response = await _geocoder.geocode(request).toDart;

@@ -16,56 +16,64 @@ class ScheduledTripsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Column(
-            children: [
-              SizedBox(height: MediaQuery.of(context).padding.top + 8),
-              _buildHeader(context),
-              const SizedBox(height: 16),
-              Expanded(
-                child: BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
-                  builder: (context, state) {
-                    if (state is ScheduledTripsLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                    if (state is ScheduledTripsError) {
-                      return Center(
-                        child: Text(
-                          'Erro ao carregar viagens',
-                          style: TextStyle(
-                            fontFamily: 'QuasimodoSemiBold',
-                            fontSize: 16,
-                            color: Colors.red.shade400,
+    return BlocListener<ScheduledTripsCubit, ScheduledTripsState>(
+      listener: (context, state) {
+        if (state is ScheduledTripCancelled) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Uma corrida foi cancelada pela KZ.')),
+          );
+          context.go('/trip');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Column(
+              children: [
+                SizedBox(height: MediaQuery.of(context).padding.top + 8),
+                _buildHeader(context),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
+                    builder: (context, state) {
+                      if (state is ScheduledTripsLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (state is ScheduledTripsError) {
+                        return Center(
+                          child: Text(
+                            'Erro ao carregar viagens',
+                            style: TextStyle(
+                              fontFamily: 'QuasimodoSemiBold',
+                              fontSize: 16,
+                              color: Colors.red.shade400,
+                            ),
                           ),
-                        ),
-                      );
-                    }
-                    final trips = state is ScheduledTripsLoaded
-                        ? state.trips
-                        : <ScheduledTrip>[];
-                    if (trips.isEmpty) return _buildEmptyState();
-                    return _buildTripsList(trips);
-                  },
+                        );
+                      }
+                      final trips = state is ScheduledTripsLoaded
+                          ? state.trips
+                          : <ScheduledTrip>[];
+                      if (trips.isEmpty) return _buildEmptyState();
+                      return _buildTripsList(trips);
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-          Positioned(
-            bottom: 24,
-            left: 20,
-            right: 20,
-            child: TripBottomNav(
-              selectedIndex: 1,
-              onItemSelected: (index) => _onNavTap(context, index),
+              ],
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 24,
+              left: 20,
+              right: 20,
+              child: TripBottomNav(
+                selectedIndex: 1,
+                onItemSelected: (index) => _onNavTap(context, index),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

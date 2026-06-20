@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local Google Maps keys
+/ios/Flutter/GoogleMaps.xcconfig
+/web/google_maps_config.js

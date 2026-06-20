@@ -41,12 +41,11 @@ class TripRepositoryImpl implements TripRepository {
       luggageCount: request.luggageCount,
       observations: request.combinedObservations,
       paymentMethod: request.paymentMethod,
+      isRoundTrip: request.isRoundTrip,
+      returnDatetime: request.returnDatetime,
     );
 
-    final tripResponse = await _client
-        .from('trips')
-        .insert(tripJson)
-        .select();
+    final tripResponse = await _client.from('trips').insert(tripJson).select();
 
     if (tripResponse.isEmpty) {
       throw Exception('Failed to create trip: empty response');
@@ -143,7 +142,9 @@ class TripRepositoryImpl implements TripRepository {
           'id, trip_id, driver_profile_id, status, offered_price, admin_approved, '
           'driver_profiles(id, '
           'provider_profiles(users(full_name, avatar_url)), '
-          'vehicles(id, brand, model, year, color, license_plate, is_active))',
+          'driver_profile_photos(photo_url, sort_order), '
+          'vehicles(id, brand, model, year, color, license_plate, is_active, '
+          'vehicle_photos(photo_url, photo_type)))',
         )
         .inFilter('trip_id', tripIds)
         .eq('admin_approved', true);
@@ -163,8 +164,9 @@ class TripRepositoryImpl implements TripRepository {
       result.add(
         TripWithCandidates(
           trip: ScheduledTripModel.fromJson(row).toEntity(),
-          candidates:
-              tripCandidates.map((c) => c.toEntity()).toList(growable: false),
+          candidates: tripCandidates
+              .map((c) => c.toEntity())
+              .toList(growable: false),
         ),
       );
     }
@@ -178,20 +180,46 @@ class TripRepositoryImpl implements TripRepository {
     String? vehicleId,
     double? offeredPrice,
   }) async {
-    // 1. Assign driver + flip status to scheduled.
+    // 1. Assign driver + flip status to the driver's final confirmation step.
     final updates = <String, dynamic>{
       'driver_profile_id': driverProfileId,
-      'status': 'scheduled',
+      'status': 'awaiting_driver_confirmation',
     };
     if (vehicleId != null) updates['vehicle_id'] = vehicleId;
     if (offeredPrice != null) updates['final_price'] = offeredPrice;
 
     await _client.from('trips').update(updates).eq('id', tripId);
 
-    // 2. Drop all candidates for this trip — the choice has been made.
+    // 2. Keep candidate history so the driver can be re-notified while the
+    // trip is waiting for final confirmation.
     await _client
         .from('trip_driver_candidates')
-        .delete()
-        .eq('trip_id', tripId);
+        .update({
+          'status': 'accepted',
+          'responded_at': DateTime.now().toUtc().toIso8601String(),
+          if (offeredPrice case final price?) 'offered_price': price,
+        })
+        .eq('trip_id', tripId)
+        .eq('driver_profile_id', driverProfileId);
+
+    await _client
+        .from('trip_driver_candidates')
+        .update({
+          'status': 'rejected',
+          'responded_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('trip_id', tripId)
+        .neq('driver_profile_id', driverProfileId);
+  }
+
+  @override
+  Future<void> cancelTrip(String tripId) async {
+    await _client
+        .from('trips')
+        .update({
+          'status': 'cancelled',
+          'cancelled_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', tripId);
   }
 }

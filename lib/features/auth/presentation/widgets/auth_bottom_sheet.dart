@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/core/utils/phone_input_formatter.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
-import 'package:kz_servicos_app/features/auth/presentation/widgets/apple_sign_in_button.dart';
-import 'package:kz_servicos_app/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 enum AuthMode { login, register, forgotPassword }
 
 class AuthBottomSheet extends StatefulWidget {
-  const AuthBottomSheet({
-    required this.initialMode,
-    super.key,
-  });
+  const AuthBottomSheet({required this.initialMode, super.key});
 
   final AuthMode initialMode;
 
@@ -51,9 +45,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
 
   void _toggleMode() {
     setState(() {
-      _mode = _mode == AuthMode.login
-          ? AuthMode.register
-          : AuthMode.login;
+      _mode = _mode == AuthMode.login ? AuthMode.register : AuthMode.login;
     });
   }
 
@@ -79,61 +71,45 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
         }
       },
       child: Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(28, 12, 28, 36),
-        child: AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDragHandle(),
-              const SizedBox(height: 24),
-              _buildHeader(),
-              const SizedBox(height: 28),
-              ..._buildFields(),
-              if (_isLogin) ...[
-                const SizedBox(height: 4),
-                _buildForgotPassword(),
-              ],
-              if (_errorMessage != null) ...[
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(28, 12, 28, 36),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDragHandle(),
+                const SizedBox(height: 24),
+                _buildHeader(),
+                const SizedBox(height: 28),
+                ..._buildFields(),
+                if (_isLogin) ...[
+                  const SizedBox(height: 4),
+                  _buildForgotPassword(),
+                ],
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  _buildErrorBanner(),
+                ],
+                const SizedBox(height: 24),
+                _buildPrimaryButton(),
                 const SizedBox(height: 16),
-                _buildErrorBanner(),
+                _buildDivider(),
+                const SizedBox(height: 16),
+                _buildSecondaryButton(),
               ],
-              const SizedBox(height: 24),
-              _buildPrimaryButton(),
-              if (!_isForgotPassword) ...[
-                const SizedBox(height: 12),
-                GoogleSignInButton(
-                  onPressed: () {},
-                  label: _isLogin
-                      ? 'Login com Google'
-                      : 'Registrar-se com Google',
-                ),
-                const SizedBox(height: 12),
-                AppleSignInButton(
-                  onPressed: () {},
-                  label: _isLogin
-                      ? 'Login com Apple'
-                      : 'Registrar-se com Apple',
-                ),
-              ],
-              const SizedBox(height: 16),
-              _buildDivider(),
-              const SizedBox(height: 16),
-              _buildSecondaryButton(),
-            ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -192,9 +168,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
 
   List<Widget> _buildFields() {
     if (_isForgotPassword) {
-      return [
-        _buildEmailField(),
-      ];
+      return [_buildEmailField()];
     }
     if (_isLogin) {
       return [
@@ -227,10 +201,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
       autocorrect: false,
       enableSuggestions: false,
       style: _fieldTextStyle(),
-      decoration: _inputDecoration(
-        hint: 'E-mail',
-        icon: Icons.email_outlined,
-      ),
+      decoration: _inputDecoration(hint: 'E-mail', icon: Icons.email_outlined),
     );
   }
 
@@ -282,8 +253,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
             color: Colors.grey[400],
             size: 20,
           ),
-          onPressed: () =>
-              setState(() => _obscurePassword = !_obscurePassword),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
       ),
     );
@@ -381,19 +351,19 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
   void _onPrimaryPressed(BuildContext context) {
     if (_isLogin) {
       context.read<AuthCubit>().signIn(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
     } else if (_isForgotPassword) {
       // TODO: implement forgot password
       Navigator.of(context).pop();
     } else {
       context.read<AuthCubit>().signUp(
-            name: _nameController.text.trim(),
-            email: _emailController.text.trim(),
-            phone: _phoneController.text.trim(),
-            password: _passwordController.text,
-          );
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text,
+      );
     }
   }
 
@@ -490,15 +460,9 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: AppColors.highlight,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: AppColors.highlight, width: 1.5),
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       prefixIcon: Icon(icon, color: Colors.grey[400], size: 20),
       suffixIcon: suffixIcon,
     );

@@ -1,4 +1,5 @@
 import 'package:kz_servicos_app/features/trip/domain/entities/trip.dart';
+import 'package:kz_servicos_app/core/utils/brazil_time.dart';
 
 class TripModel {
   const TripModel({
@@ -13,6 +14,8 @@ class TripModel {
     this.luggageCount = 0,
     this.observations,
     this.paymentMethod,
+    this.isRoundTrip = false,
+    this.returnDatetime,
     this.status = 'open',
     this.createdAt,
   });
@@ -28,6 +31,8 @@ class TripModel {
   final int luggageCount;
   final String? observations;
   final String? paymentMethod;
+  final bool isRoundTrip;
+  final DateTime? returnDatetime;
   final String status;
   final DateTime? createdAt;
 
@@ -42,6 +47,8 @@ class TripModel {
     int luggageCount = 0,
     String? observations,
     String? paymentMethod,
+    bool isRoundTrip = false,
+    DateTime? returnDatetime,
   }) =>
       {
         'client_id': clientId,
@@ -52,6 +59,9 @@ class TripModel {
         'passenger_count': passengerCount,
         'children_count': childrenCount,
         'luggage_count': luggageCount,
+        'is_round_trip': isRoundTrip,
+        if (returnDatetime != null)
+          'return_datetime': returnDatetime.toUtc().toIso8601String(),
         if (observations != null) 'observations': observations,
         if (paymentMethod != null) 'payment_method': paymentMethod,
       };
@@ -62,12 +72,16 @@ class TripModel {
     serviceCategoryId: json['service_category_id'] as String,
     pickupAddressId: json['pickup_address_id'] as String,
     dropoffAddressId: json['dropoff_address_id'] as String,
-    scheduledDatetime: DateTime.parse(json['scheduled_datetime'] as String),
+    scheduledDatetime: BrazilTime.fromBackend(json['scheduled_datetime'] as String),
     passengerCount: json['passenger_count'] as int,
     childrenCount: (json['children_count'] as int?) ?? 0,
     luggageCount: (json['luggage_count'] as int?) ?? 0,
     observations: json['observations'] as String?,
     paymentMethod: json['payment_method'] as String?,
+    isRoundTrip: json['is_round_trip'] as bool? ?? false,
+    returnDatetime: json['return_datetime'] != null
+        ? BrazilTime.fromBackend(json['return_datetime'] as String)
+        : null,
     status: json['status'] as String? ?? 'open',
     createdAt: json['created_at'] != null
         ? DateTime.parse(json['created_at'] as String)

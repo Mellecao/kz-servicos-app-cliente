@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/maps/kz_map.dart';
 import 'package:kz_servicos_app/features/trip/data/services/directions_service.dart';
 
 class MapRoutePreview extends StatefulWidget {
@@ -26,7 +27,7 @@ class MapRoutePreview extends StatefulWidget {
 }
 
 class _MapRoutePreviewState extends State<MapRoutePreview> {
-  final Completer<GoogleMapController> _controllerCompleter = Completer();
+  final Completer<KzMapController> _controllerCompleter = Completer();
   final DirectionsService _directionsService = DirectionsService();
   Set<Polyline> _polylines = {};
   Set<Marker> _markers = {};
@@ -106,9 +107,7 @@ class _MapRoutePreviewState extends State<MapRoutePreview> {
       ),
     );
 
-    await controller.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 40),
-    );
+    await controller.fitBounds(bounds, padding: 40);
   }
 
   @override
@@ -124,7 +123,7 @@ class _MapRoutePreviewState extends State<MapRoutePreview> {
         child: Stack(
           children: [
             AbsorbPointer(
-              child: GoogleMap(
+              child: KzMap(
                 initialCameraPosition: CameraPosition(
                   target: LatLng(midLat, midLng),
                   zoom: 11,

@@ -6,20 +6,34 @@ import 'package:url_launcher/url_launcher.dart';
 class DriverEnRoutePanel extends StatelessWidget {
   final MockDriver driver;
   final int etaMinutes;
+  final int distanceMeters;
   final bool isExpanded;
   final VoidCallback onToggleExpand;
+  final VoidCallback onCancel;
   final String? driverPhone;
   final VoidCallback? onOpenChat;
+  final String? driverAvatarUrl;
 
   const DriverEnRoutePanel({
     super.key,
     required this.driver,
     required this.etaMinutes,
+    this.distanceMeters = 0,
     this.isExpanded = false,
     required this.onToggleExpand,
+    required this.onCancel,
     this.driverPhone,
     this.onOpenChat,
+    this.driverAvatarUrl,
   });
+
+  String get _distanceLabel {
+    if (distanceMeters <= 0) return '';
+    if (distanceMeters >= 1000) {
+      return '${(distanceMeters / 1000).toStringAsFixed(1)} km';
+    }
+    return '$distanceMeters m';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,37 +117,53 @@ class DriverEnRoutePanel extends StatelessWidget {
                   ],
                 ),
               ),
-              if (etaMinutes > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.highlight.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        '$etaMinutes',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.highlight,
-                        ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _MiniCancelButton(onTap: onCancel),
+                  if (etaMinutes > 0) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                      const Text(
-                        'min',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.highlight,
-                        ),
+                      decoration: BoxDecoration(
+                        color: AppColors.highlight.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.access_time_rounded,
+                              size: 14, color: AppColors.highlight),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$etaMinutes min',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.highlight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (_distanceLabel.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _distanceLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.highlight.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
@@ -193,33 +223,48 @@ class DriverEnRoutePanel extends StatelessWidget {
             ),
           ),
           if (etaMinutes > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.highlight.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.access_time_rounded,
-                    size: 16,
-                    color: AppColors.highlight,
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
-                  const SizedBox(width: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.highlight.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.access_time_rounded,
+                          size: 14, color: AppColors.highlight),
+                      const SizedBox(width: 4),
+                      Text(
+                        '~$etaMinutes min',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.highlight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_distanceLabel.isNotEmpty) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    '~$etaMinutes min',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    _distanceLabel,
+                    style: TextStyle(
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.highlight,
+                      color: AppColors.highlight.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
         ],
       ),
@@ -231,6 +276,15 @@ class DriverEnRoutePanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
         children: [
+          Expanded(
+            child: _ActionButton(
+              icon: Icons.close_rounded,
+              label: 'Cancelar',
+              color: const Color(0xFFDC2626),
+              onTap: onCancel,
+            ),
+          ),
+          const SizedBox(width: 12),
           if (driverPhone != null) ...[
             Expanded(
               child: _ActionButton(
@@ -353,6 +407,15 @@ class DriverEnRoutePanel extends StatelessWidget {
   }
 
   Widget _buildAvatar(double size) {
+    if (driverAvatarUrl != null && driverAvatarUrl!.isNotEmpty) {
+      return CircleAvatar(
+        radius: size / 2,
+        backgroundImage: NetworkImage(driverAvatarUrl!),
+        backgroundColor: AppColors.highlight.withValues(alpha: 0.15),
+        onBackgroundImageError: (_, __) {},
+        child: null,
+      );
+    }
     return Container(
       width: size,
       height: size,
@@ -423,6 +486,45 @@ class _ActionButton extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniCancelButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _MiniCancelButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDC2626).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFDC2626).withValues(alpha: 0.2),
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.close_rounded, size: 14, color: Color(0xFFDC2626)),
+            SizedBox(width: 4),
+            Text(
+              'Cancelar',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFDC2626),
               ),
             ),
           ],

@@ -2,11 +2,10 @@ import 'dart:convert';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:kz_servicos_app/core/maps/google_maps_api_key.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
 
 class GeocodingAddressService {
-  static const String _apiKey = 'AIzaSyChT4wSYd-b3fT7xfEvUvmgJ0QfZv7MYSE';
-
   final http.Client _client;
 
   GeocodingAddressService({http.Client? client})
@@ -14,15 +13,11 @@ class GeocodingAddressService {
 
   /// Reverse geocodes a LatLng into a structured [TripAddress].
   Future<TripAddress?> reverseGeocodeToAddress(LatLng position) async {
-    final uri = Uri.https(
-      'maps.googleapis.com',
-      '/maps/api/geocode/json',
-      {
-        'latlng': '${position.latitude},${position.longitude}',
-        'key': _apiKey,
-        'language': 'pt-BR',
-      },
-    );
+    final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
+      'latlng': '${position.latitude},${position.longitude}',
+      'key': GoogleMapsApiKey.value,
+      'language': 'pt-BR',
+    });
 
     try {
       final response = await _client.get(uri);
@@ -41,15 +36,11 @@ class GeocodingAddressService {
 
   /// Fetches structured address from a Google Place ID.
   Future<TripAddress?> getAddressFromPlaceId(String placeId) async {
-    final uri = Uri.https(
-      'maps.googleapis.com',
-      '/maps/api/geocode/json',
-      {
-        'place_id': placeId,
-        'key': _apiKey,
-        'language': 'pt-BR',
-      },
-    );
+    final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
+      'place_id': placeId,
+      'key': GoogleMapsApiKey.value,
+      'language': 'pt-BR',
+    });
 
     try {
       final response = await _client.get(uri);
@@ -60,8 +51,7 @@ class GeocodingAddressService {
       if (results == null || results.isEmpty) return null;
 
       final result = results[0] as Map<String, dynamic>;
-      final location =
-          result['geometry']?['location'] as Map<String, dynamic>?;
+      final location = result['geometry']?['location'] as Map<String, dynamic>?;
       final latLng = location != null
           ? LatLng(
               (location['lat'] as num).toDouble(),
@@ -84,7 +74,7 @@ class GeocodingAddressService {
 
     final components =
         (result['address_components'] as List?)?.cast<Map<String, dynamic>>() ??
-            [];
+        [];
 
     String? street;
     String? number;
@@ -114,8 +104,7 @@ class GeocodingAddressService {
     }
 
     final placeId = result['place_id'] as String?;
-    final location =
-        result['geometry']?['location'] as Map<String, dynamic>?;
+    final location = result['geometry']?['location'] as Map<String, dynamic>?;
     final lat = location != null
         ? (location['lat'] as num).toDouble()
         : fallbackPosition?.latitude ?? 0;

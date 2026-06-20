@@ -5,8 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ScheduledTripsCubit extends Cubit<ScheduledTripsState> {
   ScheduledTripsCubit({required TripRepository repository})
-      : _repository = repository,
-        super(const ScheduledTripsInitial());
+    : _repository = repository,
+      super(const ScheduledTripsInitial());
 
   final TripRepository _repository;
   String? _clientId;
@@ -37,7 +37,18 @@ class ScheduledTripsCubit extends Cubit<ScheduledTripsState> {
             column: 'client_id',
             value: clientId,
           ),
-          callback: (_) => _refresh(),
+          callback: (payload) async {
+            if (payload.eventType == PostgresChangeEvent.delete ||
+                payload.newRecord['status'] == 'cancelled') {
+              final tripId =
+                  (payload.newRecord['id'] ?? payload.oldRecord['id'])
+                      as String?;
+              if (tripId != null && !isClosed) {
+                emit(ScheduledTripCancelled(tripId));
+              }
+            }
+            await _refresh();
+          },
         )
         .subscribe();
   }

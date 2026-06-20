@@ -8,6 +8,9 @@ class PassengerDetailsPanel extends StatefulWidget {
   final VoidCallback onBack;
   final bool isMinimized;
   final VoidCallback onRestore;
+  final PassengerFormData? initialData;
+  final bool isRoundTrip;
+  final String? legLabel;
 
   const PassengerDetailsPanel({
     super.key,
@@ -15,6 +18,9 @@ class PassengerDetailsPanel extends StatefulWidget {
     required this.onBack,
     this.isMinimized = false,
     required this.onRestore,
+    this.initialData,
+    this.isRoundTrip = false,
+    this.legLabel,
   });
 
   @override
@@ -46,6 +52,32 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   DateTime? get pickupDate => _isToday ? DateTime.now() : _pickupDate;
 
   @override
+  void initState() {
+    super.initState();
+    final data = widget.initialData;
+    if (data == null) return;
+
+    _adults = data.adults;
+    _hasChildren = data.hasChildren;
+    _childrenDescriptionController.text = data.childrenDescription ?? '';
+    _hasLuggage = data.hasLuggage;
+    _luggageController.text = data.luggageDescription ?? '';
+    _observationController.text = data.observations ?? '';
+    _paymentMethod = data.paymentMethod;
+
+    final scheduled = data.scheduledDatetime;
+    final now = DateTime.now();
+    _isToday =
+        scheduled.year == now.year &&
+        scheduled.month == now.month &&
+        scheduled.day == now.day;
+    _pickupDate = scheduled;
+    _isNow = false;
+    _pickupTime = TimeOfDay(hour: scheduled.hour, minute: scheduled.minute);
+
+  }
+
+  @override
   void dispose() {
     _luggageController.dispose();
     _childrenDescriptionController.dispose();
@@ -57,8 +89,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
     if (_hasLuggage && _luggageController.text.trim().isEmpty) return false;
     if (!_isNow && _pickupTime == null) return false;
     if (!_isToday && _pickupDate == null) return false;
-    if (_hasChildren &&
-        _childrenDescriptionController.text.trim().isEmpty) {
+    if (_hasChildren && _childrenDescriptionController.text.trim().isEmpty) {
       return false;
     }
     return true;
@@ -121,69 +152,78 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   Widget _buildMinimizedSummary() {
     return Column(
       children: [
-          _buildGrabber(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_rounded,
-                    size: 18, color: Colors.grey[600]),
-                const SizedBox(width: 6),
-                Text(
-                  _summaryDate,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
+        _buildGrabber(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_today_rounded,
+                size: 18,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _summaryDate,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
-                const SizedBox(width: 16),
-                Icon(Icons.access_time_rounded,
-                    size: 18, color: Colors.grey[600]),
-                const SizedBox(width: 6),
-                Text(
-                  _summaryTime,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
+              ),
+              const SizedBox(width: 16),
+              Icon(
+                Icons.access_time_rounded,
+                size: 18,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _summaryTime,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
-                const SizedBox(width: 16),
-                Icon(Icons.person_rounded, size: 18, color: Colors.grey[600]),
-                const SizedBox(width: 6),
-                Text(
-                  '$_adults',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
+              ),
+              const SizedBox(width: 16),
+              Icon(Icons.person_rounded, size: 18, color: Colors.grey[600]),
+              const SizedBox(width: 6),
+              Text(
+                '$_adults',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
                 ),
-                const Spacer(),
-                Icon(Icons.keyboard_arrow_up_rounded,
-                    size: 24, color: Colors.grey[400]),
-              ],
-            ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.keyboard_arrow_up_rounded,
+                size: 24,
+                color: Colors.grey[400],
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: _buildConfirmButton(),
-          ),
-        ],
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: _buildConfirmButton(),
+        ),
+      ],
     );
   }
 
   Widget _buildExpandedContent() {
     return Column(
-        children: [
-          _buildGrabber(),
-          _buildTitleRow(),
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+      children: [
+        _buildGrabber(),
+        _buildTitleRow(),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -256,12 +296,16 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   }
 
   Widget _buildTitleRow() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+    final legLabel = widget.legLabel;
+    final title = legLabel == null || legLabel.isEmpty
+        ? 'Detalhes da viagem'
+        : 'Detalhes da $legLabel';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Center(
         child: Text(
-          'Detalhes da viagem',
-          style: TextStyle(
+          title,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: Colors.black87,
@@ -290,7 +334,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
         QuantitySelector(
           value: _adults,
           min: 1,
-          max: 5,
+          max: 10,
           onChanged: (v) => setState(() => _adults = v),
         ),
       ],
@@ -531,23 +575,24 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
       time.hour,
       time.minute,
     );
-
-    widget.onConfirm(PassengerFormData(
-      adults: _adults,
-      scheduledDatetime: scheduledDatetime,
-      hasChildren: _hasChildren,
-      childrenDescription: _hasChildren
-          ? _childrenDescriptionController.text.trim()
-          : null,
-      hasLuggage: _hasLuggage,
-      luggageDescription: _hasLuggage
-          ? _luggageController.text.trim()
-          : null,
-      observations: _observationController.text.trim().isEmpty
-          ? null
-          : _observationController.text.trim(),
-      paymentMethod: _paymentMethod,
-    ));
+    widget.onConfirm(
+      PassengerFormData(
+        adults: _adults,
+        scheduledDatetime: scheduledDatetime,
+        hasChildren: _hasChildren,
+        childrenDescription: _hasChildren
+            ? _childrenDescriptionController.text.trim()
+            : null,
+        hasLuggage: _hasLuggage,
+        luggageDescription: _hasLuggage ? _luggageController.text.trim() : null,
+        observations: _observationController.text.trim().isEmpty
+            ? null
+            : _observationController.text.trim(),
+        paymentMethod: _paymentMethod,
+        isRoundTrip: widget.isRoundTrip,
+        returnDatetime: null,
+      ),
+    );
   }
 
   Widget _buildConfirmButton() {

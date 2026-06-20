@@ -18,25 +18,49 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="KZ Serviços - solicite viagens e serviços com praticidade.">
+  <meta name="theme-color" content="#0D5C63">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="kz_servicos_app">
+  <meta name="apple-mobile-web-app-title" content="KZ Serviços">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>kz_servicos_app</title>
+  <title>KZ Serviços</title>
   <link rel="manifest" href="manifest.json">
   <script>
     window.gm_authFailure = function() {
       console.error('[KZ DEBUG] Google Maps auth failure. Verifique: 1) Billing ativo no projeto 2) API key sem restrições de API 3) Maps JavaScript API habilitada no projeto correto');
     };
   </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChT4wSYd-b3fT7xfEvUvmgJ0QfZv7MYSE&libraries=places&v=weekly"></script>
+  <script src="google_maps_config.js"></script>
+  <script>
+    (function() {
+      function loadFlutter() {
+        var flutterScript = document.createElement('script');
+        flutterScript.src = 'flutter_bootstrap.js';
+        flutterScript.async = true;
+        document.body.appendChild(flutterScript);
+      }
+
+      var key = window.GOOGLE_MAPS_API_KEY;
+      if (!key) {
+        console.error('[KZ DEBUG] GOOGLE_MAPS_API_KEY ausente em web/google_maps_config.js');
+        loadFlutter();
+        return;
+      }
+      var script = document.createElement('script');
+      script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&v=weekly&loading=async';
+      script.async = true;
+      script.onload = loadFlutter;
+      script.onerror = loadFlutter;
+      document.head.appendChild(script);
+    })();
+  </script>
 </head>
 <body>
   <!--
@@ -47,6 +71,5 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

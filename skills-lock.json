@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "kz-database": {
+      "source": "BlackElephant-from-Brazil/kz-database-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "d344913cf3b9d1bbc8964d1dc1f3eed6cfd4f8c1671cde69ff5c931ff59182bb"
+    }
+  }
+}

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kz_servicos_app/core/services/notification_service.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/firebase_options.dart';
 import 'package:kz_servicos_app/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:kz_servicos_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
@@ -24,9 +28,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://wmlsiwjrgjygqdjtsayt.supabase.co',
-    anonKey: 'sb_publishable_Uczyit6MEzgq3grhCVqmaA_vT0m5EVS',
+    url: 'https://mtsqeomctrqfyekyzapc.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10c3Flb21jdHJxZnlla3l6YXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDYzODIsImV4cCI6MjA5NjU4MjM4Mn0.vJboLmezqk7ZjWAh3I5ZtVWXfQioAhmMQKzM_C_eaoA',
   );
+  if (!kIsWeb) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await NotificationService.instance.initialize(
+      client: Supabase.instance.client,
+      userId: Supabase.instance.client.auth.currentUser?.id,
+    );
+  }
 
   runApp(const KzServicosApp());
 }
@@ -50,14 +62,10 @@ class KzServicosApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: authCubit),
-        BlocProvider(
-          create: (_) => ProfileCubit(client: supabaseClient),
-        ),
+        BlocProvider(create: (_) => ProfileCubit(client: supabaseClient)),
         BlocProvider(
           create: (_) => TripCreationCubit(
-            createTrip: CreateTrip(
-              TripRepositoryImpl(client: supabaseClient),
-            ),
+            createTrip: CreateTrip(TripRepositoryImpl(client: supabaseClient)),
           ),
         ),
         BlocProvider(

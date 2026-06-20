@@ -105,6 +105,8 @@ void main() {
         luggageCount: 3,
         observations: 'Test obs',
         paymentMethod: 'pix',
+        isRoundTrip: true,
+        returnDatetime: DateTime.utc(2026, 4, 20, 18, 0),
       );
 
       expect(json['client_id'], 'user-uuid');
@@ -115,6 +117,8 @@ void main() {
       expect(json['passenger_count'], 2);
       expect(json['children_count'], 1);
       expect(json['luggage_count'], 3);
+      expect(json['is_round_trip'], isTrue);
+      expect(json['return_datetime'], '2026-04-20T18:00:00.000Z');
       expect(json['observations'], 'Test obs');
       expect(json['payment_method'], 'pix');
     });
@@ -131,6 +135,8 @@ void main() {
 
       expect(json.containsKey('observations'), isFalse);
       expect(json.containsKey('payment_method'), isFalse);
+      expect(json['is_round_trip'], isFalse);
+      expect(json.containsKey('return_datetime'), isFalse);
     });
 
     test('fromJson parses trip response', () {
@@ -146,6 +152,8 @@ void main() {
         'luggage_count': 0,
         'observations': 'Obs',
         'payment_method': 'pix',
+        'is_round_trip': true,
+        'return_datetime': '2026-04-20T18:00:00.000Z',
         'status': 'open',
         'created_at': '2026-04-18T10:00:00.000Z',
       };
@@ -156,7 +164,9 @@ void main() {
       expect(model.clientId, 'user-uuid');
       expect(model.passengerCount, 2);
       expect(model.status, 'open');
-      expect(model.scheduledDatetime, DateTime.utc(2026, 4, 20, 14, 30));
+      expect(model.scheduledDatetime, DateTime.utc(2026, 4, 20, 11, 30));
+      expect(model.isRoundTrip, isTrue);
+      expect(model.returnDatetime, DateTime.utc(2026, 4, 20, 15, 0));
     });
 
     test('toEntity converts to Trip correctly', () {

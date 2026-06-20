@@ -8,6 +8,8 @@ class PassengerFormData {
     this.luggageDescription,
     this.observations,
     this.paymentMethod = 'pix',
+    this.isRoundTrip = false,
+    this.returnDatetime,
   });
 
   final int adults;
@@ -18,4 +20,6 @@ class PassengerFormData {
   final String? luggageDescription;
   final String? observations;
   final String paymentMethod;
+  final bool isRoundTrip;
+  final DateTime? returnDatetime;
 }

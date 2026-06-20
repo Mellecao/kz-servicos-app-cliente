@@ -20,12 +20,15 @@ abstract class TripRepository {
   );
 
   /// Assigns [driverProfileId] (and optionally [vehicleId]) to [tripId],
-  /// sets [offeredPrice] as the final price, flips trip to `scheduled`,
-  /// and removes all remaining candidates for that trip.
+  /// sets [offeredPrice] as the final price, and flips the trip to
+  /// `awaiting_driver_confirmation` until the driver confirms.
   Future<void> acceptDriverCandidate({
     required String tripId,
     required String driverProfileId,
     String? vehicleId,
     double? offeredPrice,
   });
+
+  /// Cancels [tripId] by setting its status to `cancelled`.
+  Future<void> cancelTrip(String tripId);
 }

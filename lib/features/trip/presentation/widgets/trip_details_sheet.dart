@@ -4,16 +4,32 @@ import 'package:kz_servicos_app/features/profile/presentation/widgets/map_route_
 import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
 
 class TripDetailsSheet extends StatelessWidget {
-  const TripDetailsSheet({super.key, required this.trip});
+  const TripDetailsSheet({
+    super.key,
+    required this.trip,
+    this.onCancel,
+    this.onChat,
+  });
 
   final ScheduledTrip trip;
+  final VoidCallback? onCancel;
+  final VoidCallback? onChat;
 
-  static void show(BuildContext context, ScheduledTrip trip) {
+  static void show(
+    BuildContext context,
+    ScheduledTrip trip, {
+    VoidCallback? onCancel,
+    VoidCallback? onChat,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => TripDetailsSheet(trip: trip),
+      builder: (_) => TripDetailsSheet(
+        trip: trip,
+        onCancel: onCancel,
+        onChat: onChat,
+      ),
     );
   }
 
@@ -182,8 +198,81 @@ class TripDetailsSheet extends StatelessWidget {
               ),
             ),
           ),
+          if (onCancel != null || onChat != null) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Row(
+                children: [
+                  if (onChat != null)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onChat!();
+                        },
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                        label: const Text('Chat'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.secondary,
+                          side: const BorderSide(color: AppColors.secondary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  if (onChat != null && onCancel != null) const SizedBox(width: 12),
+                  if (onCancel != null)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Cancelar viagem?'),
+                              content: const Text(
+                                'Tem certeza que deseja cancelar esta viagem agendada?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Não'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Sim, cancelar'),
+                                ),
+                              ],
+                            ),
+                          ).then((confirmed) {
+                            if (confirmed == true) {
+                              Navigator.of(context).pop();
+                              onCancel!();
+                            }
+                          });
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
           SizedBox(
-            height: MediaQuery.of(context).padding.bottom + 24,
+            height: MediaQuery.of(context).padding.bottom + 16,
           ),
         ],
       ),

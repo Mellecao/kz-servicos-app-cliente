@@ -25,6 +25,15 @@ class ScheduledTripsLoaded extends ScheduledTripsState {
   List<Object?> get props => [trips];
 }
 
+class ScheduledTripCancelled extends ScheduledTripsState {
+  const ScheduledTripCancelled(this.tripId);
+
+  final String tripId;
+
+  @override
+  List<Object?> get props => [tripId];
+}
+
 class ScheduledTripsError extends ScheduledTripsState {
   const ScheduledTripsError(this.message);
 

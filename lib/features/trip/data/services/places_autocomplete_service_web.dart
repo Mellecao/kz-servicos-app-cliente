@@ -2,11 +2,12 @@ import 'dart:js_interop';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:kz_servicos_app/features/trip/data/models/place_prediction.dart';
 import 'package:kz_servicos_app/features/trip/data/services/google_maps_js_types.dart';
 
 class PlacesAutocompleteService {
-  PlacesAutocompleteService({dynamic client});
+  PlacesAutocompleteService({http.Client? client});
 
   Future<List<PlacePrediction>> fetchSuggestions({
     required String input,
@@ -38,8 +39,8 @@ class PlacesAutocompleteService {
       final request = params.jsify() as JSObject;
       final response =
           await JsAutocompleteSuggestion.fetchAutocompleteSuggestions(
-        request,
-      ).toDart;
+            request,
+          ).toDart;
       final suggestions = response.suggestions.toDart;
 
       return suggestions.map((s) {
@@ -51,9 +52,7 @@ class PlacesAutocompleteService {
             final offset = m.offset;
             final length = m.length;
             if (offset != null && length != null) {
-              matchList.add(
-                MatchedSubstring(offset: offset, length: length),
-              );
+              matchList.add(MatchedSubstring(offset: offset, length: length));
             }
           }
         } catch (_) {}

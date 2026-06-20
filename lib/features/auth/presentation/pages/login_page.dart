@@ -20,9 +20,7 @@ class LoginPage extends StatelessWidget {
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(
-                content: Text(
-                  'Bem-vindo(a), ${state.user.fullName}!',
-                ),
+                content: Text('Bem-vindo(a), ${state.user.fullName}!'),
                 backgroundColor: Colors.green[700],
                 duration: const Duration(seconds: 2),
               ),
@@ -45,51 +43,34 @@ class LoginPage extends StatelessWidget {
         // Errors are handled inline in the bottom sheet
       },
       child: Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset(
-            'assets/images/login_background_img.png',
-            fit: BoxFit.cover,
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.95),
-                  Colors.black.withValues(alpha: 0.65),
-                  Colors.black.withValues(alpha: 0.0),
-                ],
-                stops: const [0.0, 0.4, 0.7],
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 48),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 16),
-                  FractionallySizedBox(
-                    widthFactor: 0.8,
-                    child: Column(
-                      children: [
-                        _buildLoginButton(context),
-                        const SizedBox(height: 14),
-                        _buildRegisterButton(context),
-                      ],
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset('public/assets/bg_login.png', fit: BoxFit.cover),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 48),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const SizedBox(height: 16),
+                    FractionallySizedBox(
+                      widthFactor: 0.8,
+                      child: Column(
+                        children: [
+                          _buildLoginButton(context),
+                          const SizedBox(height: 14),
+                          _buildRegisterButton(context),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 

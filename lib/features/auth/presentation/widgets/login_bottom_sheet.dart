@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
-import 'package:kz_servicos_app/features/auth/presentation/widgets/apple_sign_in_button.dart';
-import 'package:kz_servicos_app/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 class LoginBottomSheet extends StatefulWidget {
   const LoginBottomSheet({super.key});
@@ -53,16 +51,6 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
             _buildDivider(),
             const SizedBox(height: 16),
             _buildSecondaryButton('Registrar-se'),
-            const SizedBox(height: 12),
-            GoogleSignInButton(
-              onPressed: () {},
-              label: 'Login com Google',
-            ),
-            const SizedBox(height: 12),
-            AppleSignInButton(
-              onPressed: () {},
-              label: 'Login com Apple',
-            ),
           ],
         ),
       ),
@@ -110,10 +98,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       style: _fieldTextStyle(),
-      decoration: _inputDecoration(
-        hint: 'E-mail',
-        icon: Icons.email_outlined,
-      ),
+      decoration: _inputDecoration(hint: 'E-mail', icon: Icons.email_outlined),
     );
   }
 
@@ -133,8 +118,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
             color: Colors.grey[400],
             size: 20,
           ),
-          onPressed: () =>
-              setState(() => _obscurePassword = !_obscurePassword),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
       ),
     );
@@ -258,15 +242,9 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: AppColors.highlight,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: AppColors.highlight, width: 1.5),
       ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 16,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       prefixIcon: Icon(icon, color: Colors.grey[400], size: 20),
       suffixIcon: suffixIcon,
     );

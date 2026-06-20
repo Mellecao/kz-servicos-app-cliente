@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/trip/data/models/place_prediction.dart';
+import 'package:kz_servicos_app/features/trip/data/models/recent_destination.dart';
 import 'package:kz_servicos_app/features/trip/data/services/places_autocomplete_service.dart';
 
 class AddressSearchSheet extends StatefulWidget {
@@ -15,6 +16,9 @@ class AddressSearchSheet extends StatefulWidget {
   final VoidCallback onDismissed;
   final VoidCallback onSelectPickupOnMap;
   final VoidCallback onConfirmAddresses;
+  final List<RecentDestination> recentDestinations;
+  final ValueChanged<RecentDestination>? onRecentDestinationSelected;
+  final ValueChanged<String>? onSaveCurrentDestinationAs;
 
   const AddressSearchSheet({
     super.key,
@@ -26,6 +30,9 @@ class AddressSearchSheet extends StatefulWidget {
     required this.onDismissed,
     required this.onSelectPickupOnMap,
     required this.onConfirmAddresses,
+    this.recentDestinations = const [],
+    this.onRecentDestinationSelected,
+    this.onSaveCurrentDestinationAs,
   });
 
   @override
@@ -396,11 +403,10 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: AppColors.highlight,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
         ),
-        child: const Icon(Icons.add_rounded, color: Colors.black54),
+        child: const Icon(Icons.add_rounded, color: Colors.white),
       ),
     );
   }
@@ -449,6 +455,138 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
     );
   }
 
+  void _onRecentDestinationTap(RecentDestination dest) {
+    _destinationController.removeListener(_onDestinationChanged);
+    _destinationController.text = dest.formattedAddress;
+    _destinationController.addListener(_onDestinationChanged);
+    setState(() => _suggestions = []);
+    widget.onRecentDestinationSelected?.call(dest);
+    if (_pickupController.text.trim().isEmpty) {
+      _pickupController.removeListener(_onPickupChanged);
+      _pickupController.text = 'Minha localização atual';
+      _pickupController.addListener(_onPickupChanged);
+      _pickupIsDefault = true;
+    }
+    if (_pickupIsDefault && widget.currentLocation != null) {
+      widget.onPickupSelected(
+        PlacePrediction(
+          placeId: '_current_location_',
+          description: 'Minha localização atual',
+          matchedSubstrings: [],
+        ),
+      );
+    }
+    FocusScope.of(context).unfocus();
+  }
+
+  Widget _buildRecentDestinations() {
+    final dests = widget.recentDestinations;
+    final saved = dests.where((d) => d.savedLabel != null).toList();
+    final recent = dests.where((d) => d.savedLabel == null).toList();
+    final hasDestination = _destinationController.text.trim().isNotEmpty;
+
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      itemCount: saved.length + recent.length + 2,
+      separatorBuilder: (_, i) =>
+          i < 2 ? const SizedBox.shrink() : const Divider(height: 1, indent: 56, endIndent: 16),
+      itemBuilder: (ctx, i) {
+        if (i == 0) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SaveAddressButton(
+                    icon: Icons.home_rounded,
+                    label: 'Salvar casa',
+                    enabled: hasDestination,
+                    onTap: () => widget.onSaveCurrentDestinationAs?.call('home'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _SaveAddressButton(
+                    icon: Icons.work_rounded,
+                    label: 'Salvar trabalho',
+                    enabled: hasDestination,
+                    onTap: () => widget.onSaveCurrentDestinationAs?.call('work'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        if (i == 1) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(24, 8, 24, 4),
+            child: Text(
+              'Salvos e recentes',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black38,
+                letterSpacing: 0.5,
+              ),
+            ),
+          );
+        }
+        final destIndex = i - 2;
+        final dest = destIndex < saved.length
+            ? saved[destIndex]
+            : recent[destIndex - saved.length];
+        final icon = dest.isHome
+            ? Icons.home_rounded
+            : dest.isWork
+            ? Icons.work_rounded
+            : Icons.history_rounded;
+        final label = dest.isHome
+            ? 'Casa'
+            : dest.isWork
+            ? 'Trabalho'
+            : null;
+        return InkWell(
+          onTap: () => _onRecentDestinationTap(dest),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.black38, size: 22),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (label != null)
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.highlight,
+                          ),
+                        ),
+                      Text(
+                        dest.formattedAddress,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.black87,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildSuggestionsList() {
     if (_isLoading && _suggestions.isEmpty) {
       return const Padding(
@@ -461,6 +599,12 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
           ),
         ),
       );
+    }
+    if (_suggestions.isEmpty &&
+        _activeField == 'destination' &&
+        (widget.recentDestinations.isNotEmpty ||
+            _destinationController.text.trim().isNotEmpty)) {
+      return _buildRecentDestinations();
     }
     if (_suggestions.isEmpty) return const SizedBox.shrink();
     final showMapOption = _activeField == 'pickup';
@@ -567,6 +711,66 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SaveAddressButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _SaveAddressButton({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColors.highlight.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: enabled
+                ? AppColors.highlight.withValues(alpha: 0.24)
+                : Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: enabled ? AppColors.highlight : Colors.black26,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: enabled ? AppColors.highlight : Colors.black26,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
