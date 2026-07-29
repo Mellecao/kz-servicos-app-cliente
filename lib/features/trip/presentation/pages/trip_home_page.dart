@@ -40,6 +40,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/searching_dri
 import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_trip_card.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_type_choice_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -457,6 +458,34 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Future<void> _openSearch() async {
+    final tripKind = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PointerInterceptor(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: const TripTypeChoiceSheet(),
+        ),
+      ),
+    );
+    if (tripKind == null || !mounted) return;
+    if (tripKind == 'flash') {
+      // Fluxo Flash: requer conversão de endereços do cliente para IDs
+      // aceitos por create_flash_trip. Wiring de address→UUID + categoria
+      // será feito em iteração seguinte; por enquanto sinaliza ao usuário.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Fluxo Flash em preparação. Rotas /flash/details e '
+            '/flash/searching estão prontas — falta wiring de endereços.',
+          ),
+        ),
+      );
+      return;
+    }
     final isRoundTrip = await _showTripTypePicker();
     if (isRoundTrip == null || !mounted) return;
     setState(() {

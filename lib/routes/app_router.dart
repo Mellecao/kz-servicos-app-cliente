@@ -18,6 +18,13 @@ import 'package:kz_servicos_app/features/other_services/presentation/pages/servi
 import 'package:kz_servicos_app/features/other_services/presentation/pages/category_selection_page.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/pages/services_home_page.dart';
 import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/flash_creation_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/cubit/flash_searching_cubit.dart';
+import 'package:kz_servicos_app/features/trip/presentation/pages/flash_details_page.dart';
+import 'package:kz_servicos_app/features/trip/presentation/pages/flash_searching_page.dart';
 import 'package:kz_servicos_app/features/trip/presentation/pages/trip_home_page.dart';
 
 const _publicRoutes = {'/splash', '/login'};
@@ -101,6 +108,39 @@ abstract final class AppRouter {
         builder: (context, state) {
           final request = state.extra! as ServiceRequest;
           return RequestDetailPage(request: request);
+        },
+      ),
+      GoRoute(
+        path: '/flash/details',
+        builder: (context, state) {
+          final args = state.extra! as Map<String, String>;
+          return BlocProvider(
+            create: (_) => FlashCreationCubit(
+              repository: FlashTripRepositoryImpl(
+                client: Supabase.instance.client,
+              ),
+            ),
+            child: FlashDetailsPage(
+              pickupAddressId: args['pickup']!,
+              dropoffAddressId: args['dropoff']!,
+              serviceCategoryId: args['category']!,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/flash/searching/:tripId',
+        builder: (context, state) {
+          final tripId = state.pathParameters['tripId']!;
+          return BlocProvider(
+            create: (_) => FlashSearchingCubit(
+              repository: FlashTripRepositoryImpl(
+                client: Supabase.instance.client,
+              ),
+              tripId: tripId,
+            ),
+            child: FlashSearchingPage(tripId: tripId),
+          );
         },
       ),
     ],
