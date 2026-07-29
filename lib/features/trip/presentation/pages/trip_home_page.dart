@@ -40,6 +40,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_car_ma
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_confirming_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_en_route_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_selection_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/live_trip_bottom_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/searching_driver_popup.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_trip_card.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
@@ -1840,6 +1841,38 @@ class _TripHomePageState extends State<TripHomePage>
     });
   }
 
+  Future<void> _callDriver() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Ligação em breve')),
+    );
+  }
+
+  Future<void> _confirmCancelActiveTrip() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar corrida?'),
+        content: const Text('Você deseja mesmo cancelar essa corrida?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Não'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sim, cancelar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Solicitação de cancelamento em processamento'),
+      ),
+    );
+  }
+
   Future<void> _enterInTripMapView() async {
     if (_pickupLatLng == null || _destinationLatLng == null) return;
 
@@ -2851,6 +2884,17 @@ class _TripHomePageState extends State<TripHomePage>
 
   // ──── Build ────
 
+  bool _shouldShowLiveTripSheet() {
+    return _step == TripFlowStep.driverEnRoute ||
+        _step == TripFlowStep.driverArrived ||
+        _step == TripFlowStep.tripStarted;
+  }
+
+  bool _shouldAllowCancel() {
+    return _step == TripFlowStep.driverEnRoute ||
+        _step == TripFlowStep.driverArrived;
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -2922,6 +2966,26 @@ class _TripHomePageState extends State<TripHomePage>
                           !_isCreatingTrip
                       ? _goHomeFromScheduledSearch
                       : null,
+                ),
+              ),
+            if (_shouldShowLiveTripSheet())
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: LiveTripBottomSheet(
+                  driverName: _activeDriverName ?? 'Motorista',
+                  driverPhotoUrl:
+                      null, // TODO: preencher quando avatar do motorista chegar até aqui
+                  vehicleLabel: 'Veículo', // TODO: idem
+                  etaMinutes: _driverEtaMinutes,
+                  distanceMeters: _driverDistanceMeters.toDouble(),
+                  stage: _currentExecutionStage ??
+                      TripExecutionStage.toPickup,
+                  onCall: _callDriver,
+                  onChat: _openDriverChat,
+                  onCancel:
+                      _shouldAllowCancel() ? _confirmCancelActiveTrip : null,
                 ),
               ),
           ],
