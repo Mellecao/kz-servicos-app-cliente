@@ -33,6 +33,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_det
 import 'package:kz_servicos_app/features/trip/data/models/driver_candidate_model.dart';
 import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/driver_candidate.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_car_marker.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_confirming_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_en_route_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_selection_panel.dart';
@@ -154,6 +155,8 @@ class _TripHomePageState extends State<TripHomePage>
   List<DriverCandidate> _approvedCandidates = [];
   RealtimeChannel? _candidatesChannel;
   LatLng? _liveDriverLocation;
+  double _currentBearing = 0;
+  LatLng? _previousDriverLocation;
   String? _activeDriverName;
   String? _activeDriverUserId;
   // CHANGE 1: new state variables
@@ -167,6 +170,27 @@ class _TripHomePageState extends State<TripHomePage>
   int _tripEtaSeconds = 0;
   int _tripDistanceMeters = 0;
   BitmapDescriptor? _cachedYellowDriverDotIcon;
+  final Map<int, BitmapDescriptor> _cachedCarDescriptors = {};
+
+  Future<BitmapDescriptor> _carDescriptorForBearing(double bearing) async {
+    final normalized = ((bearing % 360) + 360) % 360;
+    final index = (normalized / 30).round() % 12;
+    final cached = _cachedCarDescriptors[index];
+    if (cached != null) return cached;
+    final path = DriverCarMarker.assetForBearing(bearing);
+    try {
+      final d = await BitmapDescriptor.asset(
+        const ImageConfiguration(size: Size(64, 64)),
+        path,
+      );
+      _cachedCarDescriptors[index] = d;
+      return d;
+    } catch (e) {
+      debugPrint('[KZ-C] car sprite missing for bearing=$index path=$path err=$e');
+      _cachedYellowDriverDotIcon ??= await _createYellowDriverDotIcon();
+      return _cachedYellowDriverDotIcon!;
+    }
+  }
   StreamSubscription<Position>? _tripLocationStream;
   DateTime? _lastDriverRouteUpdate;
   List<RecentDestination> _recentDestinations = [];
@@ -1655,11 +1679,11 @@ class _TripHomePageState extends State<TripHomePage>
     }
   }
 
-  Future<void> _updateDriverMarker() async {
+  Future<void> _updateDriverMarker({double? bearing}) async {
     if (_liveDriverLocation == null) return;
     final clientLocation = _pickupLatLng ?? _currentLocation;
     _cachedBlueDotIcon ??= await _createBlueDotIcon();
-    _cachedYellowDriverDotIcon ??= await _createYellowDriverDotIcon();
+    final carIcon = await _carDescriptorForBearing(bearing ?? _currentBearing);
     if (!mounted) return;
     setState(() {
       _markers = {
@@ -1680,7 +1704,7 @@ class _TripHomePageState extends State<TripHomePage>
         Marker(
           markerId: const MarkerId('live_driver'),
           position: _liveDriverLocation!,
-          icon: _cachedYellowDriverDotIcon!,
+          icon: carIcon,
           anchor: const Offset(0.5, 0.5),
           zIndexInt: 10,
         ),
