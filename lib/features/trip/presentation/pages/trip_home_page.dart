@@ -2968,9 +2968,8 @@ class _TripHomePageState extends State<TripHomePage>
                 bottom: 0,
                 child: LiveTripBottomSheet(
                   driverName: _activeDriverName ?? 'Motorista',
-                  driverPhotoUrl:
-                      null, // TODO: preencher quando avatar do motorista chegar até aqui
-                  vehicleLabel: 'Veículo', // TODO: idem
+                  driverPhotoUrl: _activeDriverAvatarUrl,
+                  vehicleLabel: _activeVehicleSummary ?? 'Veículo',
                   etaMinutes: _driverEtaMinutes,
                   distanceMeters: _driverDistanceMeters.toDouble(),
                   stage: _currentExecutionStage ??
