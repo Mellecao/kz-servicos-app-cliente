@@ -1878,9 +1878,12 @@ class _TripHomePageState extends State<TripHomePage>
 
     setState(() {
       _polylines = {};
+      // Mantém o marker do motorista (live_driver) — dot azul do cliente sai
+      // porque o cliente está DENTRO do carro durante tripStarted.
       _markers = _markers
-          .where((m) => m.markerId.value == 'user_location')
+          .where((m) => m.markerId.value == 'live_driver')
           .toSet();
+      _userMarker = null;
     });
 
     final origin = _pickupLatLng!;
@@ -1934,24 +1937,14 @@ class _TripHomePageState extends State<TripHomePage>
           if (!mounted) return;
           final latLng = LatLng(pos.latitude, pos.longitude);
           final heading = pos.heading >= 0 ? pos.heading : 0.0;
-          _cachedBlueDotIcon ??= await _createBlueDotIcon();
           if (!mounted) return;
+          // Durante tripStarted, o dot azul do cliente NÃO aparece:
+          // o cliente está dentro do carro (marker live_driver). Ainda
+          // atualizamos _currentLocation e _navHeading para a camera
+          // seguir com bearing/tilt via heading do celular.
           setState(() {
             _currentLocation = latLng;
             _navHeading = heading;
-            _userMarker = Marker(
-              markerId: const MarkerId('user_location'),
-              position: latLng,
-              icon: _cachedBlueDotIcon!,
-              anchor: const Offset(0.5, 0.5),
-              zIndexInt: 99,
-              flat: true,
-              rotation: heading,
-            );
-            _markers = {
-              ..._markers.where((m) => m.markerId.value != 'user_location'),
-              _userMarker!,
-            };
           });
         });
   }
