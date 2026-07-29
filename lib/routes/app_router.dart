@@ -27,6 +27,13 @@ import 'package:kz_servicos_app/features/trip/presentation/cubit/flash_searching
 import 'package:kz_servicos_app/features/trip/presentation/pages/flash_details_page.dart';
 import 'package:kz_servicos_app/features/trip/presentation/pages/flash_searching_page.dart';
 import 'package:kz_servicos_app/features/trip/presentation/pages/trip_home_page.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/data/repositories/available_drivers_repository.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/data/repositories/scheduled_direct_request_repository.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/cubits/awaiting_response_cubit.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/cubits/driver_selection_cubit.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/pages/awaiting_driver_response_page.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/pages/driver_selection_page.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/pages/price_offer_review_page.dart';
 
 const _publicRoutes = {'/splash', '/login'};
 
@@ -153,6 +160,50 @@ abstract final class AppRouter {
               tripId: tripId,
             ),
             child: FlashSearchingPage(tripId: tripId),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/scheduled-choose-driver/select',
+        builder: (context, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return BlocProvider(
+            create: (_) => DriverSelectionCubit(
+              driversRepo: AvailableDriversRepository(),
+              requestRepo: ScheduledDirectRequestRepository(),
+              pickupAddressId: extra['pickupAddressId'] as String,
+              dropoffAddressId: extra['dropoffAddressId'] as String,
+              serviceCategoryId: extra['serviceCategoryId'] as String,
+              passengerCount: extra['passengerCount'] as int,
+              observation: extra['observation'] as String?,
+            ),
+            child: const DriverSelectionPage(),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/scheduled-choose-driver/awaiting/:tripId',
+        builder: (context, state) {
+          final tripId = state.pathParameters['tripId']!;
+          return BlocProvider(
+            create: (_) => AwaitingResponseCubit(
+              tripId: tripId,
+              repo: ScheduledDirectRequestRepository(),
+            )..start(),
+            child: const AwaitingDriverResponsePage(),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/scheduled-choose-driver/price-review/:tripId',
+        builder: (context, state) {
+          final tripId = state.pathParameters['tripId']!;
+          return BlocProvider(
+            create: (_) => AwaitingResponseCubit(
+              tripId: tripId,
+              repo: ScheduledDirectRequestRepository(),
+            )..start(),
+            child: PriceOfferReviewPage(tripId: tripId),
           );
         },
       ),

@@ -5,6 +5,7 @@ import 'package:kz_servicos_app/features/trip/data/models/scheduled_trip_model.d
 import 'package:kz_servicos_app/features/trip/data/models/trip_model.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_request.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_with_candidates.dart';
 import 'package:kz_servicos_app/features/trip/domain/repositories/trip_repository.dart';
@@ -53,6 +54,24 @@ class TripRepositoryImpl implements TripRepository {
     }
 
     return TripModel.fromJson(tripResponse.first).toEntity();
+  }
+
+  /// Public helper para fluxos que precisam persistir endereços antes de
+  /// criar uma trip (Subprojeto 2B — Escolha seu Motorista navega pra
+  /// nova tela com os IDs em vez de criar a trip direto).
+  Future<({String pickupAddressId, String dropoffAddressId, String serviceCategoryId})>
+      persistAddressesForDirectRequest({
+    required TripAddress pickupAddress,
+    required TripAddress dropoffAddress,
+  }) async {
+    final categoryId = await _fetchTripCategoryId();
+    final pickupId = await _insertAddress(AddressModel.fromEntity(pickupAddress));
+    final dropoffId = await _insertAddress(AddressModel.fromEntity(dropoffAddress));
+    return (
+      pickupAddressId: pickupId,
+      dropoffAddressId: dropoffId,
+      serviceCategoryId: categoryId,
+    );
   }
 
   Future<String> _fetchTripCategoryId() async {

@@ -43,7 +43,13 @@ class ScheduledModeChoiceSheet extends StatelessWidget {
                   ? () => Navigator.of(context).pop('scheduled_quote')
                   : null,
             ),
-            // TODO Subprojeto 2B: adicionar ListTile "Escolha seu motorista"
+            const Divider(),
+            ListTile(
+              leading: const Text('👤', style: TextStyle(fontSize: 28)),
+              title: const Text('Escolha seu motorista'),
+              subtitle: const Text('Selecione um motorista aprovado da sua confiança'),
+              onTap: () => Navigator.of(context).pop('scheduled_choose_driver'),
+            ),
             const SizedBox(height: 12),
             _AkiraButton(
               highlighted: !quotationAvailable,

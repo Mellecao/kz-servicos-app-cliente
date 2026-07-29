@@ -48,6 +48,8 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_n
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_type_choice_sheet.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
+import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/data/repositories/scheduled_direct_request_repository.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/system_settings_repository.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/quotation_availability.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_mode_choice_sheet.dart';
@@ -553,7 +555,23 @@ class _TripHomePageState extends State<TripHomePage>
       ),
     );
     if (!mounted) return;
-    if (secondChoice != 'scheduled_quote') return;
+    if (secondChoice != 'scheduled_quote' && secondChoice != 'scheduled_choose_driver') {
+      return;
+    }
+
+    // Guard "só 1 pendente" para scheduled_choose_driver
+    if (secondChoice == 'scheduled_choose_driver') {
+      final clientId = Supabase.instance.client.auth.currentUser?.id;
+      if (clientId != null) {
+        final active = await ScheduledDirectRequestRepository()
+            .fetchActiveRequest(clientId);
+        if (!mounted) return;
+        if (active != null) {
+          context.go('/scheduled-choose-driver/awaiting/${active['id']}');
+          return;
+        }
+      }
+    }
 
     final isRoundTrip = await _showTripTypePicker();
     if (isRoundTrip == null || !mounted) return;
@@ -564,7 +582,7 @@ class _TripHomePageState extends State<TripHomePage>
       _outboundPassengerFormData = null;
       _returnPassengerFormData = null;
       _lastPassengerFormData = null;
-      _scheduledTripType = 'scheduled_quote';
+      _scheduledTripType = secondChoice!;
     });
     _resolveCurrentAddress();
     setState(() => _isSearchActive = true);
@@ -1471,6 +1489,28 @@ class _TripHomePageState extends State<TripHomePage>
           _step = TripFlowStep.idle;
         });
         context.go('/flash/searching/$tripId');
+        return;
+      }
+
+      // ── Escolha seu Motorista (Subprojeto 2B) ────────────────
+      // Ao invés de criar a trip aqui, persistimos os endereços e
+      // navegamos pra tela de seleção de motorista; a trip só é
+      // criada quando o cliente escolhe o motorista e envia solicitação.
+      if (_scheduledTripType == 'scheduled_choose_driver') {
+        final directRepo = TripRepositoryImpl(client: Supabase.instance.client);
+        final ids = await directRepo.persistAddressesForDirectRequest(
+          pickupAddress: pickupAddress,
+          dropoffAddress: dropoffAddress,
+        );
+        if (!mounted) return;
+        setState(() => _step = TripFlowStep.idle);
+        context.push('/scheduled-choose-driver/select', extra: {
+          'pickupAddressId': ids.pickupAddressId,
+          'dropoffAddressId': ids.dropoffAddressId,
+          'serviceCategoryId': ids.serviceCategoryId,
+          'passengerCount': outboundFormData.adults,
+          'observation': outboundFormData.observations,
+        });
         return;
       }
 
