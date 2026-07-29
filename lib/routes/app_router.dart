@@ -21,6 +21,7 @@ import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.d
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
+import 'package:kz_servicos_app/features/trip/data/services/active_flash_gate.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/flash_creation_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/flash_searching_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/pages/flash_details_page.dart';
@@ -34,11 +35,23 @@ abstract final class AppRouter {
     return GoRouter(
       initialLocation: '/splash',
       refreshListenable: _AuthNotifier(authCubit),
-      redirect: (context, state) {
+      redirect: (context, state) async {
         final isLoggedIn = authCubit.state is AuthSuccess;
         final isPublic = _publicRoutes.contains(state.matchedLocation);
 
         if (!isLoggedIn && !isPublic) return '/login';
+
+        if (isLoggedIn && state.matchedLocation == '/trip') {
+          final gate = ActiveFlashGate(client: Supabase.instance.client);
+          try {
+            final target = await gate.resolveTargetPath();
+            if (target != null && target != state.matchedLocation) {
+              return target;
+            }
+          } catch (_) {
+            // gate falha silenciosa — mantém rota original
+          }
+        }
         return null;
       },
       routes: [
