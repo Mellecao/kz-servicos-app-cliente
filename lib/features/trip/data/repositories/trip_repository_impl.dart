@@ -43,6 +43,7 @@ class TripRepositoryImpl implements TripRepository {
       paymentMethod: request.paymentMethod,
       isRoundTrip: request.isRoundTrip,
       returnDatetime: request.returnDatetime,
+      tripType: request.tripType,
     );
 
     final tripResponse = await _client.from('trips').insert(tripJson).select();

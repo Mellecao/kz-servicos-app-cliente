@@ -49,6 +49,7 @@ class TripModel {
     String? paymentMethod,
     bool isRoundTrip = false,
     DateTime? returnDatetime,
+    required String tripType,
   }) =>
       {
         'client_id': clientId,
@@ -60,6 +61,7 @@ class TripModel {
         'children_count': childrenCount,
         'luggage_count': luggageCount,
         'is_round_trip': isRoundTrip,
+        'trip_type': tripType,
         if (returnDatetime != null)
           'return_datetime': returnDatetime.toUtc().toIso8601String(),
         if (observations != null) 'observations': observations,

@@ -16,6 +16,7 @@ class TripRequest extends Equatable {
     this.paymentMethod = 'pix',
     this.isRoundTrip = false,
     this.returnDatetime,
+    this.tripType = 'standard',
   });
 
   final String clientId;
@@ -31,6 +32,7 @@ class TripRequest extends Equatable {
   final String paymentMethod;
   final bool isRoundTrip;
   final DateTime? returnDatetime;
+  final String tripType;
 
   /// Builds the combined observations field from form data.
   String? get combinedObservations {
@@ -56,5 +58,6 @@ class TripRequest extends Equatable {
     passengerCount,
     isRoundTrip,
     returnDatetime,
+    tripType,
   ];
 }
