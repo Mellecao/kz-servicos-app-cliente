@@ -107,6 +107,7 @@ void main() {
         paymentMethod: 'pix',
         isRoundTrip: true,
         returnDatetime: DateTime.utc(2026, 4, 20, 18, 0),
+        tripType: 'scheduled_quote',
       );
 
       expect(json['client_id'], 'user-uuid');
@@ -131,6 +132,7 @@ void main() {
         dropoffAddressId: 'addr-dropoff',
         scheduledDatetime: DateTime.utc(2026, 4, 20, 14, 30),
         passengerCount: 1,
+        tripType: 'standard',
       );
 
       expect(json.containsKey('observations'), isFalse);
