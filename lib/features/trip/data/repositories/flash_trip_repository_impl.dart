@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../domain/entities/trip_address.dart';
 import '../../domain/repositories/flash_trip_repository.dart';
+import '../models/address_model.dart';
 
 class FlashTripRepositoryImpl implements FlashTripRepository {
   final SupabaseClient client;
@@ -25,6 +27,58 @@ class FlashTripRepositoryImpl implements FlashTripRepository {
       'p_observations': observations,
     });
     return result as String;
+  }
+
+  @override
+  Future<String> createFlashTripFromAddresses({
+    required TripAddress pickupAddress,
+    required TripAddress dropoffAddress,
+    required int passengerCount,
+    required int childrenCount,
+    required int luggageCount,
+    required String observations,
+  }) async {
+    final serviceCategoryId = await _fetchTripCategoryId();
+    final pickupId = await _insertAddress(
+      AddressModel.fromEntity(pickupAddress),
+    );
+    final dropoffId = await _insertAddress(
+      AddressModel.fromEntity(dropoffAddress),
+    );
+    return createFlashTrip(
+      pickupAddressId: pickupId,
+      dropoffAddressId: dropoffId,
+      serviceCategoryId: serviceCategoryId,
+      passengerCount: passengerCount,
+      childrenCount: childrenCount,
+      luggageCount: luggageCount,
+      observations: observations,
+    );
+  }
+
+  Future<String> _fetchTripCategoryId() async {
+    final response = await client
+        .from('service_categories')
+        .select('id')
+        .eq('service_type', 'trip')
+        .limit(1);
+    if (response.isEmpty) {
+      throw Exception(
+        'Service category for trips not found. Ensure seed data exists.',
+      );
+    }
+    return response.first['id'] as String;
+  }
+
+  Future<String> _insertAddress(AddressModel address) async {
+    final response = await client
+        .from('addresses')
+        .insert(address.toJson())
+        .select();
+    if (response.isEmpty) {
+      throw Exception('Failed to insert address: empty response');
+    }
+    return response.first['id'] as String;
   }
 
   @override

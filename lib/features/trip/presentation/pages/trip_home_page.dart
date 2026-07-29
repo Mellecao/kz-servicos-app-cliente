@@ -41,6 +41,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_tri
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_type_choice_sheet.dart';
+import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -139,6 +140,7 @@ class _TripHomePageState extends State<TripHomePage>
   PassengerFormData? _returnPassengerFormData;
   bool _isEditingReturnDetails = false;
   bool _isRoundTripRequest = false;
+  bool _isFlashRequest = false;
   bool _searchingCanGoHome = false;
   AnimationController? _searchRadarController;
 
@@ -473,22 +475,22 @@ class _TripHomePageState extends State<TripHomePage>
     );
     if (tripKind == null || !mounted) return;
     if (tripKind == 'flash') {
-      // Fluxo Flash: requer conversão de endereços do cliente para IDs
-      // aceitos por create_flash_trip. Wiring de address→UUID + categoria
-      // será feito em iteração seguinte; por enquanto sinaliza ao usuário.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Fluxo Flash em preparação. Rotas /flash/details e '
-            '/flash/searching estão prontas — falta wiring de endereços.',
-          ),
-        ),
-      );
+      setState(() {
+        _isFlashRequest = true;
+        _isRoundTripRequest = false;
+        _isEditingReturnDetails = false;
+        _outboundPassengerFormData = null;
+        _returnPassengerFormData = null;
+        _lastPassengerFormData = null;
+      });
+      _resolveCurrentAddress();
+      setState(() => _isSearchActive = true);
       return;
     }
     final isRoundTrip = await _showTripTypePicker();
     if (isRoundTrip == null || !mounted) return;
     setState(() {
+      _isFlashRequest = false;
       _isRoundTripRequest = isRoundTrip;
       _isEditingReturnDetails = false;
       _outboundPassengerFormData = null;
@@ -1379,6 +1381,28 @@ class _TripHomePageState extends State<TripHomePage>
 
       if (pickupAddress == null || dropoffAddress == null) {
         throw Exception('Could not resolve addresses');
+      }
+
+      // ── Flash flow ─────────────────────────────────────────────
+      if (_isFlashRequest) {
+        final flashRepo = FlashTripRepositoryImpl(
+          client: Supabase.instance.client,
+        );
+        final tripId = await flashRepo.createFlashTripFromAddresses(
+          pickupAddress: pickupAddress,
+          dropoffAddress: dropoffAddress,
+          passengerCount: outboundFormData.adults,
+          childrenCount: outboundFormData.hasChildren ? 1 : 0,
+          luggageCount: outboundFormData.hasLuggage ? 1 : 0,
+          observations: outboundFormData.observations ?? '',
+        );
+        if (!mounted) return;
+        setState(() {
+          _isFlashRequest = false;
+          _step = TripFlowStep.idle;
+        });
+        context.go('/flash/searching/$tripId');
+        return;
       }
 
       // Build trip request
