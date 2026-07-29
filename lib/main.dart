@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:kz_servicos_app/core/services/notification_service.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/firebase_options.dart';
@@ -26,6 +27,8 @@ import 'package:kz_servicos_app/routes/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  tz_data.initializeTimeZones();
 
   await Supabase.initialize(
     url: 'https://mtsqeomctrqfyekyzapc.supabase.co',

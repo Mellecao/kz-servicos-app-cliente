@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,6 +48,9 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_n
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_type_choice_sheet.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
+import 'package:kz_servicos_app/features/trip/data/repositories/system_settings_repository.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/quotation_availability.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_mode_choice_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_stops_layer.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
@@ -147,6 +151,7 @@ class _TripHomePageState extends State<TripHomePage>
   bool _isEditingReturnDetails = false;
   bool _isRoundTripRequest = false;
   bool _isFlashRequest = false;
+  String _scheduledTripType = 'standard';
   bool _searchingCanGoHome = false;
   AnimationController? _searchRadarController;
 
@@ -515,11 +520,41 @@ class _TripHomePageState extends State<TripHomePage>
         _outboundPassengerFormData = null;
         _returnPassengerFormData = null;
         _lastPassengerFormData = null;
+        _scheduledTripType = 'standard';
       });
       _resolveCurrentAddress();
       setState(() => _isSearchActive = true);
       return;
     }
+
+    // Cascade Scheduled → Cotação vs Akira.
+    final override = await SystemSettingsRepository.instance
+        .fetchScheduledQuoteOverride();
+    if (!mounted) return;
+
+    final sp = tz.getLocation('America/Sao_Paulo');
+    final nowSp = tz.TZDateTime.now(sp);
+    final availability = computeQuotationAvailability(
+      nowInSp: nowSp,
+      adminOverride: override,
+    );
+
+    final secondChoice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PointerInterceptor(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: ScheduledModeChoiceSheet(availability: availability),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (secondChoice != 'scheduled_quote') return;
+
     final isRoundTrip = await _showTripTypePicker();
     if (isRoundTrip == null || !mounted) return;
     setState(() {
@@ -529,6 +564,7 @@ class _TripHomePageState extends State<TripHomePage>
       _outboundPassengerFormData = null;
       _returnPassengerFormData = null;
       _lastPassengerFormData = null;
+      _scheduledTripType = 'scheduled_quote';
     });
     _resolveCurrentAddress();
     setState(() => _isSearchActive = true);
@@ -1454,6 +1490,7 @@ class _TripHomePageState extends State<TripHomePage>
         paymentMethod: outboundFormData.paymentMethod,
         isRoundTrip: _isRoundTripRequest,
         returnDatetime: returnFormData?.scheduledDatetime,
+        tripType: _scheduledTripType,
       );
 
       // Submit via cubit
