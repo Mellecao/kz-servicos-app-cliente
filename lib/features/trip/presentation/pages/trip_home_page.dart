@@ -23,7 +23,9 @@ import 'package:kz_servicos_app/features/trip/data/services/marker_animator.dart
 import 'package:kz_servicos_app/features/trip/data/services/place_details_service.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_data.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_execution_stage.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_request.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_stop.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/pending_confirmations_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_state.dart';
@@ -153,6 +155,9 @@ class _TripHomePageState extends State<TripHomePage>
   RealtimeChannel? _tripChannel;
   RealtimeChannel? _driverLocationChannel;
   MarkerAnimator? _carAnimator;
+  TripExecutionStage? _currentExecutionStage;
+  int? _currentStopOrder;
+  List<TripStop> _tripStops = const [];
   RealtimeChannel? _chatMessagesChannel;
   List<DriverCandidate> _approvedCandidates = [];
   RealtimeChannel? _candidatesChannel;
@@ -1522,6 +1527,7 @@ class _TripHomePageState extends State<TripHomePage>
         .subscribe();
 
     _fetchInitialDriverLocation(driverProfileId);
+    unawaited(_fetchTripStops(tripId));
   }
 
   Future<void> _fetchInitialDriverLocation(String driverProfileId) async {
@@ -1546,6 +1552,35 @@ class _TripHomePageState extends State<TripHomePage>
     }
   }
 
+  Future<void> _fetchTripStops(String tripId) async {
+    try {
+      final rows = await Supabase.instance.client
+          .from('trip_stops')
+          .select('id, stop_order, addresses(latitude, longitude, formatted_address)')
+          .eq('trip_id', tripId)
+          .order('stop_order', ascending: true);
+      if (!mounted) return;
+      setState(() {
+        _tripStops = (rows as List).map((r) {
+          final m = r as Map<String, dynamic>;
+          final addr = (m['addresses'] as Map?) ?? const {};
+          return TripStop(
+            id: m['id'] as String,
+            stopOrder: (m['stop_order'] as num).toInt(),
+            location: LatLng(
+              (addr['latitude'] as num?)?.toDouble() ?? 0,
+              (addr['longitude'] as num?)?.toDouble() ?? 0,
+            ),
+            address: addr['formatted_address'] as String? ?? '',
+          );
+        }).toList();
+      });
+    } catch (e) {
+      debugPrint('[KZ-C] _fetchTripStops error: $e');
+      if (mounted) setState(() => _tripStops = const []);
+    }
+  }
+
   void _stopTripTracking() {
     _tripChannel?.unsubscribe();
     _driverLocationChannel?.unsubscribe();
@@ -1553,6 +1588,10 @@ class _TripHomePageState extends State<TripHomePage>
     _driverLocationChannel = null;
     _carAnimator?.dispose();
     _carAnimator = null;
+    _currentExecutionStage = null;
+    _currentStopOrder = null;
+    _tripStops = const [];
+    _previousDriverLocation = null;
   }
 
   void _onTripUpdate(PostgresChangePayload payload) {
@@ -1579,6 +1618,16 @@ class _TripHomePageState extends State<TripHomePage>
     if (status == 'cancelled') {
       _handleRemoteTripCancelled();
       return;
+    }
+
+    final stageWire = record['execution_stage'] as String?;
+    final stopOrder = (record['current_stop_order'] as num?)?.toInt();
+    final newStage = TripExecutionStage.fromString(stageWire);
+    if (newStage != _currentExecutionStage || stopOrder != _currentStopOrder) {
+      setState(() {
+        _currentExecutionStage = newStage;
+        _currentStopOrder = stopOrder;
+      });
     }
 
     // Trip finalizada — prioridade máxima, ignora outras transições.
