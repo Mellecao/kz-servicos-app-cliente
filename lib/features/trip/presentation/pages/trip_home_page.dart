@@ -19,6 +19,7 @@ import 'package:kz_servicos_app/features/trip/data/models/recent_destination.dar
 import 'package:kz_servicos_app/features/trip/data/services/directions_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/geocoding_address_service.dart';
 import 'package:kz_servicos_app/features/trip/data/services/geocoding_service.dart';
+import 'package:kz_servicos_app/features/trip/data/services/marker_animator.dart';
 import 'package:kz_servicos_app/features/trip/data/services/place_details_service.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_data.dart';
@@ -151,6 +152,7 @@ class _TripHomePageState extends State<TripHomePage>
   String? _activeDriverProfileId;
   RealtimeChannel? _tripChannel;
   RealtimeChannel? _driverLocationChannel;
+  MarkerAnimator? _carAnimator;
   RealtimeChannel? _chatMessagesChannel;
   List<DriverCandidate> _approvedCandidates = [];
   RealtimeChannel? _candidatesChannel;
@@ -1502,6 +1504,8 @@ class _TripHomePageState extends State<TripHomePage>
           debugPrint('[KZ-C] trip-$tripId channel status=$status err=$error');
         });
 
+    _carAnimator = MarkerAnimator(vsync: this, duration: const Duration(seconds: 5));
+
     _driverLocationChannel = supabase
         .channel('driver-loc-$driverProfileId')
         .onPostgresChanges(
@@ -1547,6 +1551,8 @@ class _TripHomePageState extends State<TripHomePage>
     _driverLocationChannel?.unsubscribe();
     _tripChannel = null;
     _driverLocationChannel = null;
+    _carAnimator?.dispose();
+    _carAnimator = null;
   }
 
   void _onTripUpdate(PostgresChangePayload payload) {
@@ -1618,10 +1624,43 @@ class _TripHomePageState extends State<TripHomePage>
     final lat = (record['latitude'] as num?)?.toDouble();
     final lng = (record['longitude'] as num?)?.toDouble();
     if (lat == null || lng == null) return;
-    setState(() {
-      _liveDriverLocation = LatLng(lat, lng);
-    });
-    unawaited(_updateDriverMarker());
+
+    final target = LatLng(lat, lng);
+    final previous = _previousDriverLocation ?? _liveDriverLocation ?? target;
+    var newBearing = _currentBearing;
+    if (previous.latitude != target.latitude || previous.longitude != target.longitude) {
+      final b = Geolocator.bearingBetween(
+        previous.latitude, previous.longitude,
+        target.latitude, target.longitude,
+      );
+      if (!b.isNaN) newBearing = b;
+    }
+
+    _previousDriverLocation = target;
+
+    final animator = _carAnimator;
+    if (animator == null) {
+      // Fallback: no animator, snap directly (edge case: update arrives before start).
+      setState(() {
+        _liveDriverLocation = target;
+        _currentBearing = newBearing;
+      });
+      unawaited(_updateDriverMarker(bearing: newBearing));
+    } else {
+      animator.animateTo(
+        target: target,
+        bearing: newBearing,
+        onTick: (interpPos, interpBearing) {
+          if (!mounted) return;
+          setState(() {
+            _liveDriverLocation = interpPos;
+            _currentBearing = interpBearing;
+          });
+          unawaited(_updateDriverMarker(bearing: interpBearing));
+        },
+      );
+    }
+
     if (_step == TripFlowStep.driverEnRoute && _pickupLatLng != null) {
       final now = DateTime.now();
       if (_lastDriverRouteUpdate == null ||
