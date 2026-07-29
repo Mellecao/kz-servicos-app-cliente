@@ -1,5 +1,5 @@
 import 'package:flutter/animation.dart';
-import 'package:flutter/scheduler.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 typedef MarkerTick = void Function(LatLng position, double bearing);
@@ -24,7 +24,6 @@ class MarkerAnimator {
   LatLng? _startPos;
   LatLng? _targetPos;
   double _startBearing = 0;
-  double _targetBearing = 0;
   double _bearingDelta = 0; // shortest-path delta
   MarkerTick? _onTick;
   bool _disposed = false;
@@ -70,11 +69,11 @@ class MarkerAnimator {
         (_startPos == null ? 0.0 : currentBearing);
 
     _controller.stop();
+    final normalizedBearing = _normalize(bearing);
     _startPos = effectiveStart;
     _targetPos = target;
     _startBearing = effectiveStartBearing;
-    _targetBearing = _normalize(bearing);
-    _bearingDelta = _shortestBearingDelta(effectiveStartBearing, _targetBearing);
+    _bearingDelta = _shortestBearingDelta(effectiveStartBearing, normalizedBearing);
     _onTick = onTick;
 
     _controller
@@ -82,23 +81,7 @@ class MarkerAnimator {
       ..addListener(_emitTick)
       ..value = 0.0;
 
-    // Driving the controller forward requires an initialized binding
-    // (SchedulerBinding). In unit tests without WidgetsFlutterBinding
-    // initialized, callers drive progress via [debugTickAtProgress] instead,
-    // so a missing binding is expected and safely ignored.
-    if (_isBindingInitialized()) {
-      _controller.animateTo(1.0, duration: _duration);
-    }
-  }
-
-  static bool _isBindingInitialized() {
-    try {
-      // ignore: unnecessary_statements
-      SchedulerBinding.instance;
-      return true;
-    } catch (_) {
-      return false;
-    }
+    _controller.animateTo(1.0, duration: _duration);
   }
 
   void _emitTick() {
@@ -123,6 +106,7 @@ class MarkerAnimator {
 
   /// Test-only: drive the animation directly to a given progress in [0..1].
   /// Not intended for production use.
+  @visibleForTesting
   void debugTickAtProgress(double progress) {
     _controller.value = progress.clamp(0.0, 1.0);
     _emitTick();

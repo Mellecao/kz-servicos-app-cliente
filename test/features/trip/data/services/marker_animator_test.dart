@@ -13,6 +13,8 @@ class _FakeVsync implements TickerProvider {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('MarkerAnimator.animateTo', () {
     late MarkerAnimator animator;
     late _FakeVsync vsync;
