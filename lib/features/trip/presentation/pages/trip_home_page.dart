@@ -47,6 +47,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_type_choice_sheet.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_rating_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_stops_layer.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_summary_panel.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -1575,6 +1576,7 @@ class _TripHomePageState extends State<TripHomePage>
           );
         }).toList();
       });
+      _applyStopsLayer();
     } catch (e) {
       debugPrint('[KZ-C] _fetchTripStops error: $e');
       if (mounted) setState(() => _tripStops = const []);
@@ -1628,6 +1630,7 @@ class _TripHomePageState extends State<TripHomePage>
         _currentExecutionStage = newStage;
         _currentStopOrder = stopOrder;
       });
+      _applyStopsLayer();
     }
 
     // Trip finalizada — prioridade máxima, ignora outras transições.
@@ -1796,6 +1799,43 @@ class _TripHomePageState extends State<TripHomePage>
           anchor: const Offset(0.5, 0.5),
           zIndexInt: 10,
         ),
+      };
+    });
+  }
+
+  void _applyStopsLayer() {
+    final car = _liveDriverLocation;
+    final dest = _destinationLatLng;
+    if (car == null || dest == null || _tripStops.isEmpty) {
+      // Remove qualquer resíduo de stops se não aplica
+      setState(() {
+        _markers = _markers
+            .where((m) => !m.markerId.value.startsWith('stop_'))
+            .toSet();
+        _polylines = _polylines
+            .where((p) =>
+                p.polylineId.value != 'stops_active' &&
+                p.polylineId.value != 'stops_direct')
+            .toSet();
+      });
+      return;
+    }
+    final r = TripStopsLayer.build(
+      stops: _tripStops,
+      currentStopOrder: _currentStopOrder,
+      carPosition: car,
+      destination: dest,
+    );
+    setState(() {
+      _markers = {
+        ..._markers.where((m) => !m.markerId.value.startsWith('stop_')),
+        ...r.markers,
+      };
+      _polylines = {
+        ..._polylines.where((p) =>
+            p.polylineId.value != 'stops_active' &&
+            p.polylineId.value != 'stops_direct'),
+        ...r.polylines,
       };
     });
   }
