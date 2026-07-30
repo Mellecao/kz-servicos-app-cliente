@@ -19,7 +19,9 @@ class AwaitingDriverResponsePage extends StatelessWidget {
             context.go('/scheduled-choose-driver/price-review/${cubit.tripId}');
           } else if (state.status == ScheduledDirectStatus.rejected) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${state.driverName} não pôde aceitar. Escolha outro.')),
+              SnackBar(
+                content: Text('${state.driverName} não pôde aceitar. Escolha outro.'),
+              ),
             );
             context.go('/');
           } else if (state.status == ScheduledDirectStatus.confirmed) {
@@ -31,54 +33,104 @@ class AwaitingDriverResponsePage extends StatelessWidget {
           if (state.driverName.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-          return Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage:
-                      state.driverAvatarUrl != null ? NetworkImage(state.driverAvatarUrl!) : null,
-                  child: state.driverAvatarUrl == null
-                      ? Text(state.driverName.isNotEmpty
-                          ? state.driverName[0].toUpperCase()
-                          : '?')
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                Text('Solicitação enviada a',
-                    style: Theme.of(context).textTheme.bodyMedium),
-                Text(state.driverName,
-                    style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: 24),
-                const CircularProgressIndicator(),
-                const SizedBox(height: 24),
-                if (state.error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(state.error!, style: const TextStyle(color: Colors.red)),
-                  ),
-                Wrap(
-                  spacing: 12,
-                  children: [
-                    FilledButton.tonal(
-                      onPressed: () => context.go('/'),
-                      child: const Text('Continuar navegando'),
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 48,
+                              backgroundImage: state.driverAvatarUrl != null
+                                  ? NetworkImage(state.driverAvatarUrl!)
+                                  : null,
+                              child: state.driverAvatarUrl == null
+                                  ? Text(
+                                      state.driverName.isNotEmpty
+                                          ? state.driverName[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Solicitação enviada a',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              state.driverName,
+                              style: Theme.of(context).textTheme.headlineSmall,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 32),
+                            const SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: CircularProgressIndicator(strokeWidth: 3),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Aguardando resposta do motorista.\nVocê pode continuar navegando enquanto isso.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              textAlign: TextAlign.center,
+                            ),
+                            if (state.error != null) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                state.error!,
+                                style: const TextStyle(color: Colors.red),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
-                    OutlinedButton(
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => context.go('/'),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text('Continuar navegando'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
                       onPressed: state.cancelling
                           ? null
                           : () => context
                               .read<AwaitingResponseCubit>()
                               .cancel('cancelado pelo cliente'),
-                      child: state.cancelling
-                          ? const Text('Cancelando...')
-                          : const Text('Cancelar solicitação'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          state.cancelling
+                              ? 'Cancelando...'
+                              : 'Cancelar solicitação',
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           );
         },
