@@ -51,6 +51,7 @@ class DriverSelectionCubit extends Cubit<DriverSelectionState> {
     required this.dropoffAddressId,
     required this.serviceCategoryId,
     required this.passengerCount,
+    required this.scheduledDatetime,
     this.observation,
   })  : _driversRepo = driversRepo,
         _requestRepo = requestRepo,
@@ -62,6 +63,7 @@ class DriverSelectionCubit extends Cubit<DriverSelectionState> {
   final String dropoffAddressId;
   final String serviceCategoryId;
   final int passengerCount;
+  final DateTime scheduledDatetime;
   final String? observation;
 
   Future<void> load() async {
@@ -85,6 +87,7 @@ class DriverSelectionCubit extends Cubit<DriverSelectionState> {
         dropoffAddressId: dropoffAddressId,
         serviceCategoryId: serviceCategoryId,
         passengerCount: passengerCount,
+        scheduledDatetime: scheduledDatetime,
         observation: observation,
       );
       emit(DriverSelectionRequestSent(tripId));

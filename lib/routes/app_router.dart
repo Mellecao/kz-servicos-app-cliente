@@ -180,6 +180,7 @@ abstract final class AppRouter {
               dropoffAddressId: extra['dropoffAddressId'] as String,
               serviceCategoryId: extra['serviceCategoryId'] as String,
               passengerCount: extra['passengerCount'] as int,
+              scheduledDatetime: extra['scheduledDatetime'] as DateTime,
               observation: extra['observation'] as String?,
             ),
             child: const DriverSelectionPage(),

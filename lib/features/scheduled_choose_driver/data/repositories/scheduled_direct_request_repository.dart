@@ -7,6 +7,7 @@ class ScheduledDirectRequestRepository {
     required String dropoffAddressId,
     required String serviceCategoryId,
     required int passengerCount,
+    required DateTime scheduledDatetime,
     String? observation,
   }) async {
     final result = await Supabase.instance.client.rpc(
@@ -18,6 +19,7 @@ class ScheduledDirectRequestRepository {
         'service_category_id_input': serviceCategoryId,
         'passenger_count_input': passengerCount,
         'observation_input': observation,
+        'scheduled_datetime_input': scheduledDatetime.toUtc().toIso8601String(),
       },
     );
     return result as String;

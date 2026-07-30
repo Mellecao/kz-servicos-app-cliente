@@ -1518,6 +1518,7 @@ class _TripHomePageState extends State<TripHomePage>
           'dropoffAddressId': ids.dropoffAddressId,
           'serviceCategoryId': ids.serviceCategoryId,
           'passengerCount': outboundFormData.adults,
+          'scheduledDatetime': outboundFormData.scheduledDatetime,
           'observation': outboundFormData.observations,
         });
         return;
