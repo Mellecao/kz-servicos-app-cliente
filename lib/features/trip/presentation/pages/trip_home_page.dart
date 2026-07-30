@@ -1503,7 +1503,16 @@ class _TripHomePageState extends State<TripHomePage>
           dropoffAddress: dropoffAddress,
         );
         if (!mounted) return;
-        setState(() => _step = TripFlowStep.idle);
+        // Preserva o passo passengerDetails para que, se o cliente
+        // voltar da DriverSelectionPage, ele reveja o painel de detalhes
+        // com dados intactos (e ao voltar de novo, volta pro picker de
+        // endereços, e por último ao home).
+        _stopSearchRadar();
+        setState(() {
+          _step = TripFlowStep.passengerDetails;
+          _isCreatingTrip = false;
+          _panelMinimized = false;
+        });
         context.push('/scheduled-choose-driver/select', extra: {
           'pickupAddressId': ids.pickupAddressId,
           'dropoffAddressId': ids.dropoffAddressId,
