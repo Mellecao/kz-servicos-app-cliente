@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/scheduled_direct_request.dart';
+import '../../../trip/presentation/widgets/cancel_trip_dialog.dart';
 import '../cubits/awaiting_response_cubit.dart';
 
 class AwaitingDriverResponsePage extends StatelessWidget {
@@ -20,13 +21,17 @@ class AwaitingDriverResponsePage extends StatelessWidget {
           } else if (state.status == ScheduledDirectStatus.rejected) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('${state.driverName} não pôde aceitar. Escolha outro.'),
+                content: Text(
+                  '${state.driverName} não pôde aceitar. Escolha outro.',
+                ),
               ),
             );
             context.go('/');
           } else if (state.status == ScheduledDirectStatus.confirmed) {
             final cubit = context.read<AwaitingResponseCubit>();
             context.go('/active-trip?tripId=${cubit.tripId}');
+          } else if (state.status == ScheduledDirectStatus.cancelled) {
+            context.go('/');
           }
         },
         builder: (context, state) {
@@ -116,9 +121,16 @@ class AwaitingDriverResponsePage extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: state.cancelling
                           ? null
-                          : () => context
-                              .read<AwaitingResponseCubit>()
-                              .cancel('cancelado pelo cliente'),
+                          : () async {
+                              final reason = await showDialog<String>(
+                                context: context,
+                                builder: (_) => const CancelTripDialog(),
+                              );
+                              if (reason == null || !context.mounted) return;
+                              await context
+                                  .read<AwaitingResponseCubit>()
+                                  .cancel(reason);
+                            },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(

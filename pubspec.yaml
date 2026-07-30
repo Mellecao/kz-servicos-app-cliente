@@ -92,6 +92,7 @@ flutter:
     - assets/animations/
     - assets/GLB/
     - public/assets/
+    - public/assets/sprite/car/
 
   fonts:
     - family: OutfitBlack

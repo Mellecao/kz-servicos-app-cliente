@@ -37,6 +37,8 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_det
 import 'package:kz_servicos_app/features/trip/data/models/driver_candidate_model.dart';
 import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/driver_candidate.dart';
+import 'package:kz_servicos_app/features/trip/domain/driver_camera_follow_policy.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/cancel_trip_dialog.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_car_marker.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_confirming_panel.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_en_route_panel.dart';
@@ -202,13 +204,18 @@ class _TripHomePageState extends State<TripHomePage>
       _cachedCarDescriptors[index] = d;
       return d;
     } catch (e) {
-      debugPrint('[KZ-C] car sprite missing for bearing=$index path=$path err=$e');
+      debugPrint(
+        '[KZ-C] car sprite missing for bearing=$index path=$path err=$e',
+      );
       _cachedYellowDriverDotIcon ??= await _createYellowDriverDotIcon();
       return _cachedYellowDriverDotIcon!;
     }
   }
+
   StreamSubscription<Position>? _tripLocationStream;
   DateTime? _lastDriverRouteUpdate;
+  DateTime? _lastDriverCameraFollow;
+  bool _isCancellingActiveTrip = false;
   List<RecentDestination> _recentDestinations = [];
   int _totalUnreadMessages = 0;
 
@@ -381,7 +388,8 @@ class _TripHomePageState extends State<TripHomePage>
             )
           : await _geocodingAddressService.reverseGeocodeToAddress(position);
 
-      final address = structured ??
+      final address =
+          structured ??
           TripAddress(
             googlePlaceId: _destinationPlaceId,
             formattedAddress: formattedAddress,
@@ -555,7 +563,8 @@ class _TripHomePageState extends State<TripHomePage>
       ),
     );
     if (!mounted) return;
-    if (secondChoice != 'scheduled_quote' && secondChoice != 'scheduled_choose_driver') {
+    if (secondChoice != 'scheduled_quote' &&
+        secondChoice != 'scheduled_choose_driver') {
       return;
     }
 
@@ -1403,8 +1412,9 @@ class _TripHomePageState extends State<TripHomePage>
         _outboundPassengerFormData = formData;
         _returnPassengerFormData ??= PassengerFormData(
           adults: formData.adults,
-          scheduledDatetime:
-              formData.scheduledDatetime.add(const Duration(hours: 2)),
+          scheduledDatetime: formData.scheduledDatetime.add(
+            const Duration(hours: 2),
+          ),
           hasChildren: formData.hasChildren,
           childrenDescription: formData.childrenDescription,
           hasLuggage: formData.hasLuggage,
@@ -1421,8 +1431,7 @@ class _TripHomePageState extends State<TripHomePage>
     }
 
     final outboundFormData = _outboundPassengerFormData ?? formData;
-    final returnFormData =
-        _isRoundTripRequest ? formData : null;
+    final returnFormData = _isRoundTripRequest ? formData : null;
 
     // Get current user ID before async gaps
     final authState = context.read<AuthCubit>().state;
@@ -1513,14 +1522,17 @@ class _TripHomePageState extends State<TripHomePage>
           _isCreatingTrip = false;
           _panelMinimized = false;
         });
-        context.push('/scheduled-choose-driver/select', extra: {
-          'pickupAddressId': ids.pickupAddressId,
-          'dropoffAddressId': ids.dropoffAddressId,
-          'serviceCategoryId': ids.serviceCategoryId,
-          'passengerCount': outboundFormData.adults,
-          'scheduledDatetime': outboundFormData.scheduledDatetime,
-          'observation': outboundFormData.observations,
-        });
+        context.push(
+          '/scheduled-choose-driver/select',
+          extra: {
+            'pickupAddressId': ids.pickupAddressId,
+            'dropoffAddressId': ids.dropoffAddressId,
+            'serviceCategoryId': ids.serviceCategoryId,
+            'passengerCount': outboundFormData.adults,
+            'scheduledDatetime': outboundFormData.scheduledDatetime,
+            'observation': outboundFormData.observations,
+          },
+        );
         return;
       }
 
@@ -1598,7 +1610,10 @@ class _TripHomePageState extends State<TripHomePage>
           debugPrint('[KZ-C] trip-$tripId channel status=$status err=$error');
         });
 
-    _carAnimator = MarkerAnimator(vsync: this, duration: const Duration(seconds: 5));
+    _carAnimator = MarkerAnimator(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    );
 
     _driverLocationChannel = supabase
         .channel('driver-loc-$driverProfileId')
@@ -1635,6 +1650,9 @@ class _TripHomePageState extends State<TripHomePage>
         _lastDriverRouteUpdate = null;
       });
       unawaited(_updateDriverMarker());
+      unawaited(
+        _followDriverCamera(_liveDriverLocation!, bearing: _currentBearing),
+      );
       unawaited(_fetchDriverToPickupRoute(fitCamera: true));
     } catch (e) {
       debugPrint('[KZ-C] _fetchInitialDriverLocation error: $e');
@@ -1645,7 +1663,9 @@ class _TripHomePageState extends State<TripHomePage>
     try {
       final rows = await Supabase.instance.client
           .from('trip_stops')
-          .select('id, stop_order, addresses(latitude, longitude, formatted_address)')
+          .select(
+            'id, stop_order, addresses(latitude, longitude, formatted_address)',
+          )
           .eq('trip_id', tripId)
           .order('stop_order', ascending: true);
       if (!mounted) return;
@@ -1682,6 +1702,7 @@ class _TripHomePageState extends State<TripHomePage>
     _currentStopOrder = null;
     _tripStops = const [];
     _previousDriverLocation = null;
+    _lastDriverCameraFollow = null;
   }
 
   void _onTripUpdate(PostgresChangePayload payload) {
@@ -1768,10 +1789,13 @@ class _TripHomePageState extends State<TripHomePage>
     final target = LatLng(lat, lng);
     final previous = _previousDriverLocation ?? _liveDriverLocation ?? target;
     var newBearing = _currentBearing;
-    if (previous.latitude != target.latitude || previous.longitude != target.longitude) {
+    if (previous.latitude != target.latitude ||
+        previous.longitude != target.longitude) {
       final b = Geolocator.bearingBetween(
-        previous.latitude, previous.longitude,
-        target.latitude, target.longitude,
+        previous.latitude,
+        previous.longitude,
+        target.latitude,
+        target.longitude,
       );
       if (!b.isNaN) newBearing = b;
     }
@@ -1786,6 +1810,7 @@ class _TripHomePageState extends State<TripHomePage>
         _currentBearing = newBearing;
       });
       unawaited(_updateDriverMarker(bearing: newBearing));
+      unawaited(_followDriverCamera(target, bearing: newBearing));
     } else {
       animator.animateTo(
         target: target,
@@ -1797,6 +1822,7 @@ class _TripHomePageState extends State<TripHomePage>
             _currentBearing = interpBearing;
           });
           unawaited(_updateDriverMarker(bearing: interpBearing));
+          unawaited(_followDriverCamera(interpPos, bearing: interpBearing));
         },
       );
     }
@@ -1849,12 +1875,41 @@ class _TripHomePageState extends State<TripHomePage>
       };
     });
     _startPulseAnimation(result.points);
-    if (_liveDriverLocation != null && _pickupLatLng != null) {
+    if (fitCamera &&
+        _step != TripFlowStep.driverEnRoute &&
+        _liveDriverLocation != null &&
+        _pickupLatLng != null) {
       await _fitPoints(
         [_liveDriverLocation!, _pickupLatLng!, ...result.points],
         padding: 72,
         maxZoom: 16.5,
       );
+    }
+  }
+
+  Future<void> _followDriverCamera(
+    LatLng position, {
+    required double bearing,
+  }) async {
+    if (_step != TripFlowStep.driverEnRoute || _controller == null) return;
+
+    final now = DateTime.now();
+    if (!DriverCameraFollowPolicy.shouldUpdate(
+      lastUpdate: _lastDriverCameraFollow,
+      now: now,
+    )) {
+      return;
+    }
+    _lastDriverCameraFollow = now;
+
+    try {
+      await _controller!.animateTo(
+        target: position,
+        zoom: DriverCameraFollowPolicy.zoom,
+        bearing: bearing,
+      );
+    } catch (error) {
+      debugPrint('[KZ-C] follow driver camera error: $error');
     }
   }
 
@@ -1901,9 +1956,11 @@ class _TripHomePageState extends State<TripHomePage>
             .where((m) => !m.markerId.value.startsWith('stop_'))
             .toSet();
         _polylines = _polylines
-            .where((p) =>
-                p.polylineId.value != 'stops_active' &&
-                p.polylineId.value != 'stops_direct')
+            .where(
+              (p) =>
+                  p.polylineId.value != 'stops_active' &&
+                  p.polylineId.value != 'stops_direct',
+            )
             .toSet();
       });
       return;
@@ -1920,44 +1977,20 @@ class _TripHomePageState extends State<TripHomePage>
         ...r.markers,
       };
       _polylines = {
-        ..._polylines.where((p) =>
-            p.polylineId.value != 'stops_active' &&
-            p.polylineId.value != 'stops_direct'),
+        ..._polylines.where(
+          (p) =>
+              p.polylineId.value != 'stops_active' &&
+              p.polylineId.value != 'stops_direct',
+        ),
         ...r.polylines,
       };
     });
   }
 
   Future<void> _callDriver() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ligação em breve')),
-    );
-  }
-
-  Future<void> _confirmCancelActiveTrip() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancelar corrida?'),
-        content: const Text('Você deseja mesmo cancelar essa corrida?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Não'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sim, cancelar'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Solicitação de cancelamento em processamento'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Ligação em breve')));
   }
 
   Future<void> _enterInTripMapView() async {
@@ -2329,40 +2362,29 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Future<void> _cancelActiveTrip() async {
+    if (_isCancellingActiveTrip) return;
     final tripId = _activeTripId ?? _searchingTripId;
     if (tripId == null) return;
 
-    final confirmed = await showDialog<bool>(
+    final reason = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Cancelar corrida?'),
-          content: const Text('Tem certeza que deseja cancelar esta corrida?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Voltar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFDC2626),
-              ),
-              child: const Text('Cancelar corrida'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => const CancelTripDialog(),
     );
-    if (confirmed != true) return;
+    if (reason == null || !mounted) return;
+    _isCancellingActiveTrip = true;
 
     try {
       await Supabase.instance.client
           .from('trips')
-          .update({'status': 'cancelled'})
+          .update({
+            'status': 'cancelled',
+            'cancelled_at': DateTime.now().toUtc().toIso8601String(),
+            'cancellation_reason': reason.isEmpty ? null : reason,
+          })
           .eq('id', tripId);
     } catch (e) {
       debugPrint('[KZ] Cancel active trip error: $e');
+      _isCancellingActiveTrip = false;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2377,6 +2399,7 @@ class _TripHomePageState extends State<TripHomePage>
     if (!mounted) return;
     _stopTripTracking();
     _resetToIdle();
+    _isCancellingActiveTrip = false;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Corrida cancelada.')));
@@ -3059,12 +3082,10 @@ class _TripHomePageState extends State<TripHomePage>
                   vehicleLabel: _activeVehicleSummary ?? 'Veículo',
                   etaMinutes: _driverEtaMinutes,
                   distanceMeters: _driverDistanceMeters.toDouble(),
-                  stage: _currentExecutionStage ??
-                      TripExecutionStage.toPickup,
+                  stage: _currentExecutionStage ?? TripExecutionStage.toPickup,
                   onCall: _callDriver,
                   onChat: _openDriverChat,
-                  onCancel:
-                      _shouldAllowCancel() ? _confirmCancelActiveTrip : null,
+                  onCancel: _shouldAllowCancel() ? _cancelActiveTrip : null,
                 ),
               ),
           ],
@@ -3377,6 +3398,12 @@ class _TripHomePageState extends State<TripHomePage>
           _mapController.complete(ctrl);
         }
         _controller = ctrl;
+        if (_step == TripFlowStep.driverEnRoute &&
+            _liveDriverLocation != null) {
+          unawaited(
+            _followDriverCamera(_liveDriverLocation!, bearing: _currentBearing),
+          );
+        }
       },
       onCameraIdle: () async {
         if (_step != TripFlowStep.confirmPickup || _controller == null) return;
@@ -3388,6 +3415,10 @@ class _TripHomePageState extends State<TripHomePage>
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
       compassEnabled: false,
+      zoomGesturesEnabled: _step != TripFlowStep.driverEnRoute,
+      scrollGesturesEnabled: _step != TripFlowStep.driverEnRoute,
+      rotateGesturesEnabled: _step != TripFlowStep.driverEnRoute,
+      tiltGesturesEnabled: _step != TripFlowStep.driverEnRoute,
       polylines: _polylines,
       markers: {..._markers, ?_userMarker},
       circles: _circles,

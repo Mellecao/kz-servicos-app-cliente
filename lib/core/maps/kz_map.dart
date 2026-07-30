@@ -71,6 +71,7 @@ class KzMap extends StatefulWidget {
   final ValueChanged<gm.LatLng>? onTap;
   final VoidCallback? onCameraIdle;
   final bool zoomControlsEnabled;
+  final bool zoomGesturesEnabled;
   final bool scrollGesturesEnabled;
   final bool rotateGesturesEnabled;
   final bool tiltGesturesEnabled;
@@ -92,6 +93,7 @@ class KzMap extends StatefulWidget {
     this.onTap,
     this.onCameraIdle,
     this.zoomControlsEnabled = true,
+    this.zoomGesturesEnabled = true,
     this.scrollGesturesEnabled = true,
     this.rotateGesturesEnabled = true,
     this.tiltGesturesEnabled = true,
@@ -133,6 +135,7 @@ class _KzMapState extends State<KzMap> {
       onCameraIdle: widget.onCameraIdle,
       onTap: widget.onTap,
       zoomControlsEnabled: widget.zoomControlsEnabled,
+      zoomGesturesEnabled: widget.zoomGesturesEnabled,
       scrollGesturesEnabled: widget.scrollGesturesEnabled,
       rotateGesturesEnabled: widget.rotateGesturesEnabled,
       tiltGesturesEnabled: widget.tiltGesturesEnabled,

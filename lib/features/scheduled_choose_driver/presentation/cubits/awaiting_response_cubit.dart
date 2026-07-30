@@ -47,15 +47,17 @@ class AwaitingResponseCubit extends Cubit<AwaitingResponseState> {
   AwaitingResponseCubit({
     required this.tripId,
     required ScheduledDirectRequestRepository repo,
-  })  : _repo = repo,
-        super(const AwaitingResponseState(
-          status: ScheduledDirectStatus.awaitingDriver,
-          driverName: '',
-          driverAvatarUrl: null,
-          offeredPrice: null,
-          cancelling: false,
-          error: null,
-        ));
+  }) : _repo = repo,
+       super(
+         const AwaitingResponseState(
+           status: ScheduledDirectStatus.awaitingDriver,
+           driverName: '',
+           driverAvatarUrl: null,
+           offeredPrice: null,
+           cancelling: false,
+           error: null,
+         ),
+       );
 
   final String tripId;
   final ScheduledDirectRequestRepository _repo;
@@ -86,7 +88,9 @@ class AwaitingResponseCubit extends Cubit<AwaitingResponseState> {
     if (row == null) return;
 
     final providerRaw = row['driver_profiles'];
-    final provider = providerRaw is Map ? providerRaw['provider_profiles'] : null;
+    final provider = providerRaw is Map
+        ? providerRaw['provider_profiles']
+        : null;
     final userRaw = provider is Map ? provider['users'] : null;
     final candidates = (row['trip_driver_candidates'] as List?) ?? const [];
     final candidateStatus = candidates.isNotEmpty
@@ -96,23 +100,37 @@ class AwaitingResponseCubit extends Cubit<AwaitingResponseState> {
         ? (candidates.first['offered_price'] as num?)?.toDouble()
         : null;
 
-    emit(state.copyWith(
-      status: scheduledDirectStatusFrom(
-        tripStatus: row['status'] as String,
-        candidateStatus: candidateStatus,
+    emit(
+      state.copyWith(
+        status: scheduledDirectStatusFrom(
+          tripStatus: row['status'] as String,
+          candidateStatus: candidateStatus,
+        ),
+        driverName:
+            (userRaw is Map ? userRaw['full_name'] as String? : null) ??
+            state.driverName,
+        driverAvatarUrl: (userRaw is Map
+            ? userRaw['avatar_url'] as String?
+            : null),
+        offeredPrice: offeredPrice,
+        clearError: true,
       ),
-      driverName: (userRaw is Map ? userRaw['full_name'] as String? : null) ?? state.driverName,
-      driverAvatarUrl: (userRaw is Map ? userRaw['avatar_url'] as String? : null),
-      offeredPrice: offeredPrice,
-      clearError: true,
-    ));
+    );
   }
 
   Future<void> cancel(String reason) async {
+    if (state.cancelling || state.status == ScheduledDirectStatus.cancelled) {
+      return;
+    }
     emit(state.copyWith(cancelling: true, clearError: true));
     try {
       await _repo.cancel(tripId, reason);
-      emit(state.copyWith(status: ScheduledDirectStatus.cancelled, cancelling: false));
+      emit(
+        state.copyWith(
+          status: ScheduledDirectStatus.cancelled,
+          cancelling: false,
+        ),
+      );
     } catch (e) {
       emit(state.copyWith(cancelling: false, error: e.toString()));
     }

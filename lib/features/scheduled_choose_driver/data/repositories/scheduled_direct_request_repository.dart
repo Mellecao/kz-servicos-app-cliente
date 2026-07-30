@@ -40,10 +40,20 @@ class ScheduledDirectRequestRepository {
   }
 
   Future<void> cancel(String tripId, String reason) async {
-    await Supabase.instance.client.rpc(
-      'cancel_scheduled_choose_driver_trip',
-      params: {'p_trip_id': tripId, 'p_reason': reason},
-    );
+    try {
+      await Supabase.instance.client.rpc(
+        'cancel_scheduled_choose_driver_trip',
+        params: {
+          'p_trip_id': tripId,
+          'p_reason': reason.isEmpty ? null : reason,
+        },
+      );
+    } on PostgrestException catch (error) {
+      final alreadyCancelled =
+          error.code == 'P0001' &&
+          error.message.toLowerCase().contains('status cancelled');
+      if (!alreadyCancelled) rethrow;
+    }
   }
 
   Future<Map<String, dynamic>?> fetchActiveRequest(String clientId) async {
@@ -56,7 +66,10 @@ class ScheduledDirectRequestRepository {
         ''')
         .eq('client_id', clientId)
         .eq('trip_type', 'scheduled_choose_driver')
-        .inFilter('status', ['awaiting_driver_confirmation', 'awaiting_client_confirmation'])
+        .inFilter('status', [
+          'awaiting_driver_confirmation',
+          'awaiting_client_confirmation',
+        ])
         .limit(1)
         .maybeSingle();
 
