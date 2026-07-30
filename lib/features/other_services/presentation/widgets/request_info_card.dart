@@ -26,8 +26,11 @@ class RequestInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = ServiceCategory.colorForSlug(request.categoryId);
-    final categoryIcon = ServiceCategory.iconForSlug(request.categoryId);
+    final categoryColor = ServiceCategory.colorForSlug(request.categoryId ?? '');
+    final categoryIcon = ServiceCategory.iconForSlug(request.categoryId ?? '');
+    final displayLabel = request.freeformProfession?.isNotEmpty == true
+        ? request.freeformProfession!
+        : request.categoryName;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -59,7 +62,7 @@ class RequestInfoCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  request.categoryName,
+                  displayLabel,
                   style: TextStyle(
                     fontFamily: AppTheme.fontFamilyTitle,
                     fontSize: 16,

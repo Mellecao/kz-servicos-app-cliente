@@ -25,8 +25,11 @@ class RequestListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = ServiceCategory.colorForSlug(request.categoryId);
-    final categoryIcon = ServiceCategory.iconForSlug(request.categoryId);
+    final categoryColor = ServiceCategory.colorForSlug(request.categoryId ?? '');
+    final categoryIcon = ServiceCategory.iconForSlug(request.categoryId ?? '');
+    final displayLabel = request.freeformProfession?.isNotEmpty == true
+        ? request.freeformProfession!
+        : request.categoryName;
 
     final formattedDate = _formatDate(request.createdAt);
 
@@ -62,7 +65,7 @@ class RequestListTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    request.categoryName,
+                    displayLabel,
                     style: TextStyle(
                       fontFamily: AppTheme.fontFamilyTitle,
                       fontSize: 14,

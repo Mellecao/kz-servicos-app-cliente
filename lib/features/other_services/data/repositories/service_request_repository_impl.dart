@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kz_servicos_app/features/other_services/data/models/service_request.dart';
 import 'package:kz_servicos_app/features/other_services/data/repositories/service_request_repository.dart';
@@ -8,13 +10,46 @@ class ServiceRequestRepositoryImpl implements ServiceRequestRepository {
 
   final SupabaseClient _client;
 
+  static const _photosBucket = 'Service_Request_Photos';
+
   @override
-  Future<void> createServiceRequest({
+  Future<String> createServiceRequest({
     required ServiceRequest request,
     required String clientId,
   }) async {
     final json = request.toInsertJson(clientId: clientId);
-    await _client.from('service_requests').insert(json);
+    final response = await _client
+        .from('service_requests')
+        .insert(json)
+        .select('id')
+        .single();
+    return response['id'] as String;
+  }
+
+  @override
+  Future<void> uploadPhotos({
+    required String serviceRequestId,
+    required List<String> localPaths,
+  }) async {
+    for (var i = 0; i < localPaths.length; i++) {
+      final path = localPaths[i];
+      final file = File(path);
+      if (!file.existsSync()) continue;
+      final ext = path.split('.').last.toLowerCase();
+      final storagePath = '$serviceRequestId/$i.$ext';
+      await _client.storage.from(_photosBucket).upload(
+            storagePath,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
+      final publicUrl =
+          _client.storage.from(_photosBucket).getPublicUrl(storagePath);
+      await _client.from('service_request_photos').insert({
+        'service_request_id': serviceRequestId,
+        'photo_url': publicUrl,
+        'sort_order': i,
+      });
+    }
   }
 
   @override

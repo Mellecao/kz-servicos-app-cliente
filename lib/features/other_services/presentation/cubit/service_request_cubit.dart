@@ -23,10 +23,20 @@ class ServiceRequestCubit extends Cubit<ServiceRequestState> {
         emit(const ServiceRequestError('Usuário não autenticado'));
         return;
       }
-      await _repository.createServiceRequest(
+      final requestId = await _repository.createServiceRequest(
         request: request,
         clientId: userId,
       );
+      if (request.mediaPaths.isNotEmpty) {
+        try {
+          await _repository.uploadPhotos(
+            serviceRequestId: requestId,
+            localPaths: request.mediaPaths,
+          );
+        } catch (_) {
+          // upload de fotos é best-effort: request já foi criada com sucesso
+        }
+      }
       emit(const ServiceRequestSuccess());
     } on Exception catch (e) {
       emit(ServiceRequestError(e.toString()));

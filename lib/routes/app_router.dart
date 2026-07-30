@@ -15,6 +15,7 @@ import 'package:kz_servicos_app/features/other_services/data/models/service_requ
 import 'package:kz_servicos_app/features/other_services/presentation/pages/my_requests_page.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/pages/request_detail_page.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/pages/service_request_form_page.dart';
+import 'package:kz_servicos_app/features/other_services/presentation/pages/service_request_freeform_page.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/pages/category_selection_page.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/pages/services_home_page.dart';
 import 'package:kz_servicos_app/features/splash/presentation/pages/splash_page.dart';
@@ -111,6 +112,10 @@ abstract final class AppRouter {
       GoRoute(
         path: '/services/new',
         builder: (context, state) => const CategorySelectionPage(),
+      ),
+      GoRoute(
+        path: '/services/new-freeform',
+        builder: (context, state) => const ServiceRequestFreeformPage(),
       ),
       GoRoute(
         path: '/services/request-form',

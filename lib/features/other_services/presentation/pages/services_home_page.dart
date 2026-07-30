@@ -53,7 +53,7 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
               children: [
                 const _Header(),
                 NewServiceButton(
-                  onTap: () => context.push('/services/new'),
+                  onTap: () => context.push('/services/new-freeform'),
                 ),
                 const SizedBox(height: 20),
                 BlocBuilder<ServiceCategoriesCubit, ServiceCategoriesState>(

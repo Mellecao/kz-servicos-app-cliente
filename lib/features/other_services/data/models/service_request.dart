@@ -12,8 +12,9 @@ enum UrgencyType {
 
 class ServiceRequest {
   final String id;
-  final String categoryId;
+  final String? categoryId;
   final String categoryName;
+  final String? freeformProfession;
   final String problem;
   final String details;
   final List<String> mediaPaths;
@@ -25,8 +26,9 @@ class ServiceRequest {
 
   const ServiceRequest({
     required this.id,
-    required this.categoryId,
+    this.categoryId,
     required this.categoryName,
+    this.freeformProfession,
     required this.problem,
     required this.details,
     required this.mediaPaths,
@@ -40,7 +42,8 @@ class ServiceRequest {
   Map<String, dynamic> toInsertJson({required String clientId}) {
     return {
       'client_id': clientId,
-      'service_category_id': categoryId,
+      if (categoryId != null) 'service_category_id': categoryId,
+      if (freeformProfession != null) 'freeform_profession': freeformProfession,
       'description': '$problem\n\n$details',
       'service_date': (scheduledDate ?? DateTime.now()).toIso8601String(),
       if (address != null) 'observations': address,
@@ -56,8 +59,9 @@ class ServiceRequest {
 
     return ServiceRequest(
       id: json['id'] as String,
-      categoryId: json['service_category_id'] as String,
+      categoryId: json['service_category_id'] as String?,
       categoryName: categoryData?['name'] as String? ?? '',
+      freeformProfession: json['freeform_profession'] as String?,
       problem: problem,
       details: details,
       mediaPaths: const [],
