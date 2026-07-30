@@ -11,6 +11,10 @@ class PassengerDetailsPanel extends StatefulWidget {
   final PassengerFormData? initialData;
   final bool isRoundTrip;
   final String? legLabel;
+  /// Quando false, remove o chip "Agora" (horário imediato) — reservado
+  /// para corridas Flash. Fluxos agendados (Cotação, Escolha seu Motorista)
+  /// devem forçar o cliente a escolher um horário futuro explícito.
+  final bool allowImmediate;
 
   const PassengerDetailsPanel({
     super.key,
@@ -21,6 +25,7 @@ class PassengerDetailsPanel extends StatefulWidget {
     this.initialData,
     this.isRoundTrip = false,
     this.legLabel,
+    this.allowImmediate = true,
   });
 
   @override
@@ -41,6 +46,14 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   bool _isNow = true;
   bool _isToday = true;
   String _paymentMethod = 'pix';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!widget.allowImmediate && _isNow) {
+      _isNow = false;
+    }
+  }
 
   int get adults => _adults;
   bool get hasChildren => _hasChildren;
@@ -477,12 +490,14 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
       children: [
         const Text('Horário de embarque', style: TextStyle(fontSize: 14)),
         const Spacer(),
-        _buildChip(
-          label: 'Agora',
-          selected: _isNow,
-          onTap: () => setState(() => _isNow = true),
-        ),
-        const SizedBox(width: 8),
+        if (widget.allowImmediate) ...[
+          _buildChip(
+            label: 'Agora',
+            selected: _isNow,
+            onTap: () => setState(() => _isNow = true),
+          ),
+          const SizedBox(width: 8),
+        ],
         _buildChip(
           label: _pickupTime != null && !_isNow
               ? '${_pickupTime!.hour.toString().padLeft(2, '0')}:${_pickupTime!.minute.toString().padLeft(2, '0')}'

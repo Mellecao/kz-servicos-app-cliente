@@ -3654,6 +3654,9 @@ class _TripHomePageState extends State<TripHomePage>
             onRestore: () => setState(() => _panelMinimized = false),
             initialData: _lastPassengerFormData,
             isRoundTrip: _isRoundTripRequest,
+            // "Agora" é exclusivo de Flash. Agendados (Cotação, Escolha
+            // seu Motorista) exigem horário futuro explícito.
+            allowImmediate: _isFlashRequest,
           ),
         );
       case TripFlowStep.searchingDriver:
