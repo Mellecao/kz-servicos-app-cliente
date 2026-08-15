@@ -153,8 +153,8 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        color: const Color(0xFFF7F6F2),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
@@ -167,44 +167,51 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildGrabber(),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  'Motoristas disponíveis',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A2E),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PROPOSTAS RECEBIDAS',
+                        style: TextStyle(
+                          color: Color(0xFF9A7200),
+                          fontSize: 10.5,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Escolha seu motorista',
+                        style: TextStyle(
+                          fontFamily: 'OutfitBlack',
+                          fontSize: 23,
+                          color: Color(0xFF1E1D1B),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.highlight,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${candidates.length}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                Text(
+                  '${candidates.length} ${candidates.length == 1 ? 'proposta' : 'propostas'}',
+                  style: const TextStyle(
+                    color: Color(0xFF7D786E),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           SizedBox(
-            height: 286,
+            height: 316,
             child: PageView.builder(
               controller: _pageController,
               itemCount: candidates.length,
@@ -350,29 +357,48 @@ class _DriverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final price = candidate.offeredPrice == null
+        ? 'Valor a combinar'
+        : 'R\$ ${candidate.offeredPrice!.toStringAsFixed(2).replaceAll('.', ',')}';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF171714), Color(0xFF2C2922)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 17),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _driverAvatar(72, candidate.initials, candidate.avatarUrl),
+                Container(
+                  padding: const EdgeInsets.all(2.5),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [AppColors.highlight, Color(0xFFFF8A00)],
+                    ),
+                  ),
+                  child: _driverAvatar(
+                    67,
+                    candidate.initials,
+                    candidate.avatarUrl,
+                  ),
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -381,9 +407,9 @@ class _DriverCard extends StatelessWidget {
                       Text(
                         candidate.driverName,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1A1A2E),
+                          fontFamily: 'OutfitBlack',
+                          fontSize: 20,
+                          color: Colors.white,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -393,8 +419,8 @@ class _DriverCard extends StatelessWidget {
                         Text(
                           candidate.vehicleSummary!,
                           style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF888888),
+                            fontSize: 12,
+                            color: Color(0xFFB8B4AA),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -406,14 +432,37 @@ class _DriverCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (candidate.offeredPrice != null) ...[
-                  const SizedBox(width: 8),
-                  _PriceBadge(price: candidate.offeredPrice!),
-                ],
               ],
             ),
-            const SizedBox(height: 14),
-            const _VerifiedBadge(),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                const Expanded(child: _VerifiedBadge()),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'VALOR PROPOSTO',
+                      style: TextStyle(
+                        color: Color(0xFF9F9B91),
+                        fontSize: 8.5,
+                        letterSpacing: 1.1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      price,
+                      style: const TextStyle(
+                        color: AppColors.highlight,
+                        fontFamily: 'OutfitBlack',
+                        fontSize: 24,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
             const Spacer(),
             Center(
               child: GestureDetector(
@@ -421,13 +470,11 @@ class _DriverCard extends StatelessWidget {
                 child: const Padding(
                   padding: EdgeInsets.only(bottom: 10),
                   child: Text(
-                    'DETALHES DO MOTORISTA',
+                    'Ver perfil completo',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.highlight,
-                      decoration: TextDecoration.underline,
-                      decorationThickness: 1.5,
+                      color: Color(0xFFD7D2C7),
                     ),
                   ),
                 ),
@@ -450,11 +497,11 @@ class _DriverCard extends StatelessWidget {
                 ),
                 child: const Center(
                   child: Text(
-                    'Selecionar motorista',
+                    'Escolher motorista',
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF28220F),
                     ),
                   ),
                 ),

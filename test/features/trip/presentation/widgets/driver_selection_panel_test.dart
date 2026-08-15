@@ -4,6 +4,42 @@ import 'package:kz_servicos_app/features/trip/domain/entities/driver_candidate.d
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_selection_panel.dart';
 
 void main() {
+  testWidgets('lista propostas com o mesmo design premium da confirmação', (
+    tester,
+  ) async {
+    const candidate = DriverCandidate(
+      candidateId: 'candidate-premium',
+      tripId: 'trip-1',
+      driverProfileId: 'driver-1',
+      driverName: 'Maria Souza',
+      vehicleBrand: 'Toyota',
+      vehicleModel: 'Corolla',
+      vehicleYear: 2024,
+      vehicleColor: 'Prata',
+      vehiclePlate: 'ABC1D23',
+      offeredPrice: 92.5,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DriverSelectionPanel(
+            candidates: const [candidate],
+            onDriverAccepted: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('PROPOSTAS RECEBIDAS'), findsOneWidget);
+    expect(find.text('Escolha seu motorista'), findsOneWidget);
+    expect(find.text('Maria Souza'), findsOneWidget);
+    expect(find.text('Toyota Corolla 2024'), findsOneWidget);
+    expect(find.text('R\$ 92,50'), findsOneWidget);
+    expect(find.text('Ver perfil completo'), findsOneWidget);
+    expect(find.text('Escolher motorista'), findsOneWidget);
+  });
+
   testWidgets('detalhes do motorista mostram foto de perfil e fotos extras', (
     tester,
   ) async {
@@ -30,7 +66,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('DETALHES DO MOTORISTA'));
+    await tester.tap(find.text('Ver perfil completo'));
     await tester.pumpAndSettle();
 
     expect(find.text('Fotos do motorista e do carro'), findsOneWidget);

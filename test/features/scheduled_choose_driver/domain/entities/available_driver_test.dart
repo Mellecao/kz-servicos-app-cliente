@@ -65,8 +65,20 @@ void main() {
         'average_rating': null,
         'total_ratings': 0,
         'vehicles': [
-          {'brand': 'A', 'model': '1', 'color': '-', 'license_plate': 'A', 'is_active': false},
-          {'brand': 'B', 'model': '2', 'color': '-', 'license_plate': 'B', 'is_active': true},
+          {
+            'brand': 'A',
+            'model': '1',
+            'color': '-',
+            'license_plate': 'A',
+            'is_active': false,
+          },
+          {
+            'brand': 'B',
+            'model': '2',
+            'color': '-',
+            'license_plate': 'B',
+            'is_active': true,
+          },
         ],
       };
       expect(AvailableDriver.fromMap(row).vehicle?.brand, 'B');

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/repositories/scheduled_direct_request_repository.dart';
 import '../../domain/entities/scheduled_direct_request.dart';
+import '../../domain/entities/price_offer_details.dart';
 
 class AwaitingResponseState {
   final ScheduledDirectStatus status;
@@ -13,6 +14,7 @@ class AwaitingResponseState {
   final double? offeredPrice;
   final bool cancelling;
   final String? error;
+  final PriceOfferDetails? details;
 
   const AwaitingResponseState({
     required this.status,
@@ -21,6 +23,7 @@ class AwaitingResponseState {
     required this.offeredPrice,
     required this.cancelling,
     required this.error,
+    this.details,
   });
 
   AwaitingResponseState copyWith({
@@ -31,6 +34,7 @@ class AwaitingResponseState {
     bool? cancelling,
     String? error,
     bool clearError = false,
+    PriceOfferDetails? details,
   }) {
     return AwaitingResponseState(
       status: status ?? this.status,
@@ -39,6 +43,7 @@ class AwaitingResponseState {
       offeredPrice: offeredPrice ?? this.offeredPrice,
       cancelling: cancelling ?? this.cancelling,
       error: clearError ? null : (error ?? this.error),
+      details: details ?? this.details,
     );
   }
 }
@@ -56,6 +61,7 @@ class AwaitingResponseCubit extends Cubit<AwaitingResponseState> {
            offeredPrice: null,
            cancelling: false,
            error: null,
+           details: null,
          ),
        );
 
@@ -113,6 +119,7 @@ class AwaitingResponseCubit extends Cubit<AwaitingResponseState> {
             ? userRaw['avatar_url'] as String?
             : null),
         offeredPrice: offeredPrice,
+        details: PriceOfferDetails.fromMap(row),
         clearError: true,
       ),
     );

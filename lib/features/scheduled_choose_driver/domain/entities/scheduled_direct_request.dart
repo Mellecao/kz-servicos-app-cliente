@@ -12,13 +12,15 @@ ScheduledDirectStatus scheduledDirectStatusFrom({
 }) {
   if (tripStatus == 'cancelled') return ScheduledDirectStatus.cancelled;
   if (tripStatus == 'scheduled') return ScheduledDirectStatus.confirmed;
-  if (tripStatus == 'awaiting_client_confirmation' && candidateStatus == 'accepted') {
+  if (tripStatus == 'awaiting_client_confirmation' &&
+      candidateStatus == 'accepted') {
     return ScheduledDirectStatus.priceOffered;
   }
   if (tripStatus == 'searching_drivers' && candidateStatus == 'rejected') {
     return ScheduledDirectStatus.rejected;
   }
-  if (tripStatus == 'awaiting_driver_confirmation' && candidateStatus == 'pending') {
+  if (tripStatus == 'awaiting_driver_confirmation' &&
+      candidateStatus == 'pending') {
     return ScheduledDirectStatus.awaitingDriver;
   }
   return ScheduledDirectStatus.awaitingDriver;

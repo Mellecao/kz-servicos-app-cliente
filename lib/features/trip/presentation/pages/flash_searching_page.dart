@@ -34,12 +34,13 @@ class _FlashSearchingPageState extends State<FlashSearchingPage> {
     return BlocConsumer<FlashSearchingCubit, FlashSearchingState>(
       listener: (ctx, state) {
         if (state is FlashSearchingReadyToStart) {
-          ctx.go('/active-trip?tripId=${widget.tripId}');
+          ctx.go('/trip?activeTripId=${widget.tripId}');
         } else if (state is FlashSearchingCancelled) {
           ctx.go('/home');
         } else if (state is FlashSearchingError) {
-          ScaffoldMessenger.of(ctx)
-              .showSnackBar(SnackBar(content: Text(state.message)));
+          ScaffoldMessenger.of(
+            ctx,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (ctx, state) => Scaffold(
@@ -47,9 +48,9 @@ class _FlashSearchingPageState extends State<FlashSearchingPage> {
           title: const Text('Buscando motoristas'),
           actions: [
             TextButton(
-              onPressed: () => ctx
-                  .read<FlashSearchingCubit>()
-                  .cancelTrip('Cliente cancelou'),
+              onPressed: () => ctx.read<FlashSearchingCubit>().cancelTrip(
+                'Cliente cancelou',
+              ),
               child: const Text(
                 'Cancelar',
                 style: TextStyle(color: Colors.red),
@@ -61,25 +62,27 @@ class _FlashSearchingPageState extends State<FlashSearchingPage> {
           FlashSearchingProposals(:final proposals) when proposals.isNotEmpty =>
             ListView(
               children: proposals
-                  .map((p) => FlashProposalCard(
-                        proposal: p,
-                        onTap: () => _openProfile(ctx, p),
-                      ))
+                  .map(
+                    (p) => FlashProposalCard(
+                      proposal: p,
+                      onTap: () => _openProfile(ctx, p),
+                    ),
+                  )
                   .toList(),
             ),
           FlashSearchingAwaitingDriver(:final driverName) => Center(
-              child: Text('Aguardando $driverName confirmar...'),
-            ),
+            child: Text('Aguardando $driverName confirmar...'),
+          ),
           _ => const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Buscando motoristas...'),
-                ],
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Buscando motoristas...'),
+              ],
             ),
+          ),
         },
       ),
     );

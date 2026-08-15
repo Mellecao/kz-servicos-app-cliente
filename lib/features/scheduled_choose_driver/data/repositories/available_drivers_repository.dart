@@ -4,9 +4,10 @@ import '../../domain/entities/available_driver.dart';
 
 class AvailableDriversRepository {
   Future<List<AvailableDriver>> fetchApproved() async {
-    final response = await Supabase.instance.client
-        .from('driver_profiles')
-        .select('''
+    final response =
+        await Supabase.instance.client
+                .from('driver_profiles')
+                .select('''
           id,
           provider_profiles!inner (
             status,
@@ -16,13 +17,16 @@ class AvailableDriversRepository {
           ),
           vehicles ( brand, model, color, license_plate, is_active )
         ''')
-        .eq('provider_profiles.status', 'approved') as List<dynamic>;
+                .eq('provider_profiles.status', 'approved')
+            as List<dynamic>;
 
     return response
         .whereType<Map<String, dynamic>>()
         .map((row) {
           final providerRaw = row['provider_profiles'];
-          final provider = providerRaw is Map<String, dynamic> ? providerRaw : null;
+          final provider = providerRaw is Map<String, dynamic>
+              ? providerRaw
+              : null;
           if (provider == null) return null;
           final userRaw = provider['users'];
           final user = userRaw is Map<String, dynamic> ? userRaw : null;

@@ -16,7 +16,9 @@ class DriverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = driver.fullName.isEmpty ? '?' : driver.fullName[0].toUpperCase();
+    final initial = driver.fullName.isEmpty
+        ? '?'
+        : driver.fullName[0].toUpperCase();
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -26,8 +28,9 @@ class DriverCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundImage:
-                  driver.avatarUrl != null ? NetworkImage(driver.avatarUrl!) : null,
+              backgroundImage: driver.avatarUrl != null
+                  ? NetworkImage(driver.avatarUrl!)
+                  : null,
               child: driver.avatarUrl == null ? Text(initial) : null,
             ),
             const SizedBox(width: 12),
@@ -35,18 +38,23 @@ class DriverCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(driver.fullName, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    driver.fullName,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 4),
-                  Row(children: [
-                    const Icon(Icons.star, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text(
-                      driver.averageRating == null
-                          ? 'Sem avaliações'
-                          : '${driver.averageRating!.toStringAsFixed(1)} (${driver.totalRatings})',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ]),
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 14, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        driver.averageRating == null
+                            ? 'Sem avaliações'
+                            : '${driver.averageRating!.toStringAsFixed(1)} (${driver.totalRatings})',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                   if (driver.vehicle != null) ...[
                     const SizedBox(height: 4),
                     Text(
@@ -59,7 +67,9 @@ class DriverCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             FilledButton(
-              onPressed: isLoading ? null : () => onRequest(driver.driverProfileId),
+              onPressed: isLoading
+                  ? null
+                  : () => onRequest(driver.driverProfileId),
               child: const Text('Solicitar'),
             ),
           ],

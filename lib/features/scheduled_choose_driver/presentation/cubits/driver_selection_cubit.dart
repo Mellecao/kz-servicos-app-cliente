@@ -28,7 +28,9 @@ class DriverSelectionLoaded extends DriverSelectionState {
   }) {
     return DriverSelectionLoaded(
       drivers: drivers ?? this.drivers,
-      sendingDriverId: clearSending ? null : (sendingDriverId ?? this.sendingDriverId),
+      sendingDriverId: clearSending
+          ? null
+          : (sendingDriverId ?? this.sendingDriverId),
     );
   }
 }
@@ -53,9 +55,9 @@ class DriverSelectionCubit extends Cubit<DriverSelectionState> {
     required this.passengerCount,
     required this.scheduledDatetime,
     this.observation,
-  })  : _driversRepo = driversRepo,
-        _requestRepo = requestRepo,
-        super(const DriverSelectionInitial());
+  }) : _driversRepo = driversRepo,
+       _requestRepo = requestRepo,
+       super(const DriverSelectionInitial());
 
   final AvailableDriversRepository _driversRepo;
   final ScheduledDirectRequestRepository _requestRepo;

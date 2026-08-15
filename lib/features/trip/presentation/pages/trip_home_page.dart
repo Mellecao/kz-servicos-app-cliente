@@ -52,6 +52,7 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_type_cho
 import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/scheduled_choose_driver/data/repositories/scheduled_direct_request_repository.dart';
+import 'package:kz_servicos_app/features/scheduled_choose_driver/data/services/active_scheduled_direct_gate.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/system_settings_repository.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/quotation_availability.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_mode_choice_sheet.dart';
@@ -3630,7 +3631,18 @@ class _TripHomePageState extends State<TripHomePage>
                     child: ScheduledTripCard(
                       key: ValueKey(index),
                       trip: trip,
-                      onTap: () => TripDetailsSheet.show(context, trip),
+                      onTap: () {
+                        final pendingPath =
+                            ActiveScheduledDirectGate.resolvePathForTrip(
+                              tripId: trip.id,
+                              status: trip.status,
+                            );
+                        if (pendingPath != null) {
+                          context.go(pendingPath);
+                          return;
+                        }
+                        TripDetailsSheet.show(context, trip);
+                      },
                       onPrevTap: () => _goToPrevTrip(total),
                       onNextTap: () => _goToNextTrip(total),
                       currentIndex: index,

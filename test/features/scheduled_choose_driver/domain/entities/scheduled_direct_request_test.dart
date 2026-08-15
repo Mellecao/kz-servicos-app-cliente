@@ -3,25 +3,31 @@ import 'package:kz_servicos_app/features/scheduled_choose_driver/domain/entities
 
 void main() {
   group('scheduledDirectStatusFrom', () {
-    test('trip awaiting_driver_confirmation + candidate pending → awaitingDriver', () {
-      expect(
-        scheduledDirectStatusFrom(
-          tripStatus: 'awaiting_driver_confirmation',
-          candidateStatus: 'pending',
-        ),
-        ScheduledDirectStatus.awaitingDriver,
-      );
-    });
+    test(
+      'trip awaiting_driver_confirmation + candidate pending → awaitingDriver',
+      () {
+        expect(
+          scheduledDirectStatusFrom(
+            tripStatus: 'awaiting_driver_confirmation',
+            candidateStatus: 'pending',
+          ),
+          ScheduledDirectStatus.awaitingDriver,
+        );
+      },
+    );
 
-    test('trip awaiting_client_confirmation + candidate accepted → priceOffered', () {
-      expect(
-        scheduledDirectStatusFrom(
-          tripStatus: 'awaiting_client_confirmation',
-          candidateStatus: 'accepted',
-        ),
-        ScheduledDirectStatus.priceOffered,
-      );
-    });
+    test(
+      'trip awaiting_client_confirmation + candidate accepted → priceOffered',
+      () {
+        expect(
+          scheduledDirectStatusFrom(
+            tripStatus: 'awaiting_client_confirmation',
+            candidateStatus: 'accepted',
+          ),
+          ScheduledDirectStatus.priceOffered,
+        );
+      },
+    );
 
     test('trip searching_drivers + candidate rejected → rejected', () {
       expect(

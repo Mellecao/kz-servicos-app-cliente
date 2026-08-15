@@ -17,9 +17,9 @@ class DriverSelectionPage extends StatelessWidget {
           if (state is DriverSelectionRequestSent) {
             context.go('/scheduled-choose-driver/awaiting/${state.tripId}');
           } else if (state is DriverSelectionError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Erro: ${state.message}')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Erro: ${state.message}')));
           }
         },
         builder: (context, state) {
@@ -32,7 +32,9 @@ class DriverSelectionPage extends StatelessWidget {
           }
           if (state is DriverSelectionLoaded) {
             if (state.drivers.isEmpty) {
-              return const Center(child: Text('Nenhum motorista aprovado disponível.'));
+              return const Center(
+                child: Text('Nenhum motorista aprovado disponível.'),
+              );
             }
             return ListView.builder(
               padding: const EdgeInsets.all(12),
@@ -42,7 +44,8 @@ class DriverSelectionPage extends StatelessWidget {
                 return DriverCard(
                   driver: d,
                   isLoading: state.sendingDriverId == d.driverProfileId,
-                  onRequest: (id) => context.read<DriverSelectionCubit>().request(id),
+                  onRequest: (id) =>
+                      context.read<DriverSelectionCubit>().request(id),
                 );
               },
             );

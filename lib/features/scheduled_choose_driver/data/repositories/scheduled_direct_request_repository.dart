@@ -60,8 +60,23 @@ class ScheduledDirectRequestRepository {
     final response = await Supabase.instance.client
         .from('trips')
         .select('''
-          id, driver_profile_id, status,
-          driver_profiles ( provider_profiles ( users ( full_name, avatar_url ) ) ),
+          id, driver_profile_id, vehicle_id, status, scheduled_datetime,
+          passenger_count, children_count, luggage_count, observations,
+          pickup_address:addresses!pickup_address_id ( formatted_address ),
+          dropoff_address:addresses!dropoff_address_id ( formatted_address ),
+          trip_stops ( stop_order, addresses ( formatted_address ) ),
+          driver_profiles (
+            provider_profiles (
+              average_rating, total_ratings, bio,
+              users ( full_name, avatar_url )
+            ),
+            driver_profile_photos ( photo_url, sort_order ),
+            vehicles (
+              id, brand, model, year, color, license_plate,
+              passenger_capacity, is_active,
+              vehicle_photos ( photo_url, photo_type )
+            )
+          ),
           trip_driver_candidates ( offered_price, status )
         ''')
         .eq('client_id', clientId)
@@ -73,6 +88,18 @@ class ScheduledDirectRequestRepository {
         .limit(1)
         .maybeSingle();
 
-    return response;
+    if (response == null) return null;
+    final driverProfileId = response['driver_profile_id'] as String?;
+    var completedTrips = 0;
+    if (driverProfileId != null) {
+      final count = await Supabase.instance.client
+          .from('trips')
+          .select('id')
+          .eq('driver_profile_id', driverProfileId)
+          .eq('status', 'finished')
+          .count(CountOption.exact);
+      completedTrips = count.count;
+    }
+    return {...response, 'completed_trips': completedTrips};
   }
 }
