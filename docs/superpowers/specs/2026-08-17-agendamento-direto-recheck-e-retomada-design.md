@@ -140,7 +140,7 @@ Troca de motorista reaproveitando a viagem.
 
 Passageiros, bagagens e endereços permanecem intactos.
 
-### `driver_confirm_scheduled_recheck(trip_id_input)` (nova)
+### `driver_confirm_scheduled_recheck(trip_id_input, driver_observation_input)` (nova)
 
 - Exige que o autenticado seja o motorista da viagem.
 - Exige `trip_type = 'scheduled_choose_driver'`, status `awaiting_driver_confirmation` e candidato `accepted`.
@@ -153,6 +153,10 @@ Não chama `advance_trip_execution`: isso é do fluxo flash e não faz sentido n
 
 `cancel_scheduled_choose_driver_trip` já cobre os três status de negociação.
 
+`client_reject_scheduled_price` já devolve a viagem para `searching_drivers` com `driver_profile_id` nulo e o candidato `rejected`. Não precisa limpar `final_price`: nessa fase o preço ainda vive apenas em `trip_driver_candidates.offered_price`, e só vira `final_price` quando o cliente aceita.
+
+`driver_accept_scheduled_direct` continua como está — é ela que garante o objetivo de não haver aprovação do administrador neste fluxo.
+
 ### Códigos de erro
 
 As RPCs levantam com `ERRCODE` próprios e mensagens estáveis, para que o app traduza por código e não por substring:
@@ -162,7 +166,9 @@ As RPCs levantam com `ERRCODE` próprios e mensagens estáveis, para que o app t
 | `KZ001` | Viagem não está na fase esperada |
 | `KZ002` | Motorista indisponível ou não aprovado |
 | `KZ003` | Operação não permitida durante o re-check |
-| `KZ004` | Dados da volta ausentes numa viagem de ida e volta |
+| `KZ004` | Parâmetros de volta incoerentes com `is_round_trip_input` |
+
+A regra de `KZ004`: quando `is_round_trip_input` é falso, `return_passengers_input` e `return_luggage_input` precisam vir vazios. Quando é verdadeiro, podem vir vazios — a volta sem passageiros nomeados é válida, já que a UI permite pular esse preenchimento.
 
 ## App do cliente
 
@@ -228,6 +234,8 @@ Não é necessário assinar `trip_driver_candidates` no realtime: toda transiç�
 ### Tela de espera
 
 `AwaitingDriverResponsePage` passa a ter duas versões de texto conforme a fase. No re-check exibe o preço já fechado, deixando claro que o cliente aguarda uma confirmação, não um valor.
+
+A página serve as duas fases porque é alcançada de dois jeitos: em sessão, logo após o envio da solicitação (fase "aguardando motorista"), e por rota, vinda da lista de agendamentos (fase re-check). Quem volta pela lista durante o "aguardando motorista" cai na lista de motoristas, não aqui — é lá que ele pode trocar de motorista ou acionar "Cotação", que é justamente o objetivo 3.
 
 ### Envio dos dados de passageiros e bagagens
 
