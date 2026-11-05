@@ -21,11 +21,22 @@ class TripBottomNav extends StatelessWidget {
   static const _tripsItem = (icon: Icons.local_taxi_rounded, label: 'Viagens');
   static const _searchItem = (icon: Icons.search_rounded, label: 'Buscar');
 
-  List<({IconData icon, String label})> get _items => [
-    tripsEnabled ? _tripsItem : _searchItem,
-    (icon: Icons.calendar_month_rounded, label: 'Agendamentos'),
-    (icon: Icons.work_rounded, label: 'Serviços'),
-    (icon: Icons.person_rounded, label: 'Perfil'),
+  /// Cada item guarda o índice do ramo do shell que abre, para que ocultar
+  /// "Agendamentos" (viagens desligadas) não desloque os restantes.
+  List<({int branch, IconData icon, String label})> get _items => [
+    (
+      branch: 0,
+      icon: tripsEnabled ? _tripsItem.icon : _searchItem.icon,
+      label: tripsEnabled ? _tripsItem.label : _searchItem.label,
+    ),
+    if (tripsEnabled)
+      (
+        branch: 1,
+        icon: Icons.calendar_month_rounded,
+        label: 'Agendamentos',
+      ),
+    (branch: 2, icon: Icons.work_rounded, label: 'Serviços'),
+    (branch: 3, icon: Icons.person_rounded, label: 'Perfil'),
   ];
 
   @override
@@ -45,17 +56,18 @@ class TripBottomNav extends StatelessWidget {
         ],
       ),
       child: Row(
-        children: List.generate(items.length, (i) {
-          return Expanded(
-            child: _NavItem(
-              icon: items[i].icon,
-              label: items[i].label,
-              isSelected: selectedIndex == i,
-              badgeCount: i == 1 ? scheduledCount : 0,
-              onTap: () => onItemSelected(i),
+        children: [
+          for (final item in items)
+            Expanded(
+              child: _NavItem(
+                icon: item.icon,
+                label: item.label,
+                isSelected: selectedIndex == item.branch,
+                badgeCount: item.branch == 1 ? scheduledCount : 0,
+                onTap: () => onItemSelected(item.branch),
+              ),
             ),
-          );
-        }),
+        ],
       ),
     );
   }
