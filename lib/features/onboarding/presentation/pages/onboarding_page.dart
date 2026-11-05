@@ -20,11 +20,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   static const _slides = [
     (
-      title: 'Solicitar serviços KZ ficou ainda mais fácil',
+      title: 'Solicitar serviços ficou ainda mais fácil',
       subtitle:
-          'Nosso novo APP conecta você ao motorista com poucos cliques. Rápido e prático.',
+          'A nossa nova app liga-o ao motorista com poucos toques. Rápido e prático.',
       meshColors: AppColors.meshSlide1,
-      textColor: AppColors.white,
+      textColor: AppColors.onPrimary,
       lottieAsset: 'assets/animations/smartphone_tap.json',
     ),
     (
@@ -91,17 +91,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return Color.lerp(lowerColor, upperColor, t) ?? lowerColor;
   }
 
-  Color _interpolateParticleColor() {
-    final lowerIndex = _currentPage.floor().clamp(0, _slides.length - 1);
-    final upperIndex = _currentPage.ceil().clamp(0, _slides.length - 1);
-    final t = _currentPage - _currentPage.floor();
-
-    final lowerColor = lowerIndex < 2 ? AppColors.white : AppColors.textPrimary;
-    final upperColor = upperIndex < 2 ? AppColors.white : AppColors.textPrimary;
-
-    return Color.lerp(lowerColor, upperColor, t) ?? lowerColor;
-  }
-
   int get _currentIndex => _currentPage.round();
   bool get _isLastSlide => _currentIndex == _slides.length - 1;
 
@@ -125,7 +114,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Widget build(BuildContext context) {
     final meshColors = _interpolateMeshColors();
     final textColor = _interpolateTextColor();
-    final particleColor = _interpolateParticleColor();
+    // As partículas contrastam com o fundo exatamente como o texto.
+    final particleColor = textColor;
 
     return Scaffold(
       body: Stack(

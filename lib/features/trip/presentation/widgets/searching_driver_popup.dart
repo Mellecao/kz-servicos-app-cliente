@@ -88,7 +88,7 @@ class _SearchingDriverSheetState extends State<SearchingDriverSheet>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Buscando motoristas',
+                          'À procura de motoristas',
                           style: TextStyle(
                             fontFamily: 'OutfitBlack',
                             fontSize: 16,
@@ -97,7 +97,7 @@ class _SearchingDriverSheetState extends State<SearchingDriverSheet>
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Aguardando disponibilidade...',
+                          'A aguardar disponibilidade...',
                           style: TextStyle(
                             fontSize: 13,
                             color: Color(0xFF888888),
@@ -125,7 +125,7 @@ class _SearchingDriverSheetState extends State<SearchingDriverSheet>
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.highlight,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.onPrimary,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/utils/angola_phone.dart';
 
 class ProfileHeader extends StatelessWidget {
   final String name;
@@ -53,7 +54,7 @@ class ProfileHeader extends StatelessWidget {
             style: const TextStyle(
               fontFamily: 'OutfitBlack',
               fontSize: 20,
-              color: AppColors.textPrimary,
+              color: AppColors.sheetTextPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -68,7 +69,7 @@ class ProfileHeader extends StatelessWidget {
           if (phone != null && phone!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
-              phone!,
+              displayAngolaPhone(phone),
               style: const TextStyle(
                 fontFamily: 'QuasimodoSemiBold',
                 fontSize: 14,

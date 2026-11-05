@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/core/widgets/brand_backdrop.dart';
+import 'package:kz_servicos_app/core/widgets/brand_logo.dart';
+import 'package:kz_servicos_app/core/widgets/dark_system_ui.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/auth/presentation/widgets/auth_bottom_sheet.dart';
@@ -33,7 +36,7 @@ class LoginPage extends StatelessWidget {
             ..showSnackBar(
               SnackBar(
                 content: const Text(
-                  'Conta criada! Verifique seu e-mail para confirmar.',
+                  'Conta criada! Verifique o seu e-mail para confirmar.',
                 ),
                 backgroundColor: Colors.green[700],
                 duration: const Duration(seconds: 4),
@@ -42,33 +45,36 @@ class LoginPage extends StatelessWidget {
         }
         // Errors are handled inline in the bottom sheet
       },
-      child: Scaffold(
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset('public/assets/bg_login.png', fit: BoxFit.cover),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 48),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    const SizedBox(height: 16),
-                    FractionallySizedBox(
-                      widthFactor: 0.8,
-                      child: Column(
-                        children: [
-                          _buildLoginButton(context),
-                          const SizedBox(height: 14),
-                          _buildRegisterButton(context),
-                        ],
+      child: DarkSystemUi(
+        child: Scaffold(
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              const BrandBackdrop(),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 48),
+                  child: Column(
+                    children: [
+                      const Spacer(),
+                      const BrandLogo(onDark: true, width: 280),
+                      const Spacer(),
+                      FractionallySizedBox(
+                        widthFactor: 0.8,
+                        child: Column(
+                          children: [
+                            _buildLoginButton(context),
+                            const SizedBox(height: 14),
+                            _buildRegisterButton(context),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -82,7 +88,7 @@ class LoginPage extends StatelessWidget {
         onPressed: () => _showLoginSheet(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.highlight,
-          foregroundColor: const Color(0xFF1A1A1A),
+          foregroundColor: AppColors.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -93,7 +99,7 @@ class LoginPage extends StatelessWidget {
           ),
           elevation: 0,
         ),
-        child: const Text('Login'),
+        child: const Text('Iniciar sessão'),
       ),
     );
   }
@@ -116,7 +122,7 @@ class LoginPage extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        child: const Text('Cadastre-se'),
+        child: const Text('Criar conta'),
       ),
     );
   }

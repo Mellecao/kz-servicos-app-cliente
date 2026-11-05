@@ -1,5 +1,5 @@
 import 'package:kz_servicos_app/features/trip/domain/entities/trip.dart';
-import 'package:kz_servicos_app/core/utils/brazil_time.dart';
+import 'package:kz_servicos_app/core/utils/angola_time.dart';
 
 class TripModel {
   const TripModel({
@@ -49,24 +49,29 @@ class TripModel {
     String? paymentMethod,
     bool isRoundTrip = false,
     DateTime? returnDatetime,
+    String? returnPickupAddressId,
+    String? returnDropoffAddressId,
     required String tripType,
-  }) =>
-      {
-        'client_id': clientId,
-        'service_category_id': serviceCategoryId,
-        'pickup_address_id': pickupAddressId,
-        'dropoff_address_id': dropoffAddressId,
-        'scheduled_datetime': scheduledDatetime.toUtc().toIso8601String(),
-        'passenger_count': passengerCount,
-        'children_count': childrenCount,
-        'luggage_count': luggageCount,
-        'is_round_trip': isRoundTrip,
-        'trip_type': tripType,
-        if (returnDatetime != null)
-          'return_datetime': returnDatetime.toUtc().toIso8601String(),
-        if (observations != null) 'observations': observations,
-        if (paymentMethod != null) 'payment_method': paymentMethod,
-      };
+  }) => {
+    'client_id': clientId,
+    'service_category_id': serviceCategoryId,
+    'pickup_address_id': pickupAddressId,
+    'dropoff_address_id': dropoffAddressId,
+    'scheduled_datetime': scheduledDatetime.toUtc().toIso8601String(),
+    'passenger_count': passengerCount,
+    'children_count': childrenCount,
+    'luggage_count': luggageCount,
+    'is_round_trip': isRoundTrip,
+    'trip_type': tripType,
+    if (returnDatetime != null)
+      'return_datetime': returnDatetime.toUtc().toIso8601String(),
+    if (returnPickupAddressId != null)
+      'return_pickup_address_id': returnPickupAddressId,
+    if (returnDropoffAddressId != null)
+      'return_dropoff_address_id': returnDropoffAddressId,
+    if (observations != null) 'observations': observations,
+    if (paymentMethod != null) 'payment_method': paymentMethod,
+  };
 
   factory TripModel.fromJson(Map<String, dynamic> json) => TripModel(
     id: json['id'] as String,
@@ -74,7 +79,9 @@ class TripModel {
     serviceCategoryId: json['service_category_id'] as String,
     pickupAddressId: json['pickup_address_id'] as String,
     dropoffAddressId: json['dropoff_address_id'] as String,
-    scheduledDatetime: BrazilTime.fromBackend(json['scheduled_datetime'] as String),
+    scheduledDatetime: AngolaTime.fromBackend(
+      json['scheduled_datetime'] as String,
+    ),
     passengerCount: json['passenger_count'] as int,
     childrenCount: (json['children_count'] as int?) ?? 0,
     luggageCount: (json['luggage_count'] as int?) ?? 0,
@@ -82,7 +89,7 @@ class TripModel {
     paymentMethod: json['payment_method'] as String?,
     isRoundTrip: json['is_round_trip'] as bool? ?? false,
     returnDatetime: json['return_datetime'] != null
-        ? BrazilTime.fromBackend(json['return_datetime'] as String)
+        ? AngolaTime.fromBackend(json['return_datetime'] as String)
         : null,
     status: json['status'] as String? ?? 'open',
     createdAt: json['created_at'] != null

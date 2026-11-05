@@ -5,9 +5,9 @@ enum TripExecutionStage {
   toStop('to_stop', 'A caminho da parada'),
   waitingAtStop('waiting_at_stop', 'Parado na parada'),
   toDestination('to_destination', 'A caminho do destino'),
-  waitingForReturn('waiting_for_return', 'Aguardando você'),
+  waitingForReturn('waiting_for_return', 'A aguardar por si'),
   returning('returning', 'Voltando pro ponto de partida'),
-  finished('finished', 'Corrida finalizada');
+  finished('finished', 'Viagem concluída');
 
   const TripExecutionStage(this.wireValue, this.label);
 

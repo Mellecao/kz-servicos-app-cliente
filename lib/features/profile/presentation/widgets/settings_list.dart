@@ -54,7 +54,7 @@ class _SettingsListState extends State<SettingsList> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.sheetSurface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -98,7 +98,7 @@ class _SettingsListState extends State<SettingsList> {
           _SettingsItem(
             icon: Icons.history_rounded,
             iconBackgroundColor: AppColors.highlight,
-            label: 'Histórico de Corridas',
+            label: 'Histórico de viagens',
             isExpanded: _expandedIndex == 2,
             isExpandable: true,
             onTap: () => _onItemTap(2),
@@ -168,17 +168,14 @@ class _SettingsItem extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: 'QuasimodoSemiBold',
                   fontSize: 15,
-                  color: AppColors.textPrimary,
+                  color: AppColors.sheetTextPrimary,
                 ),
               ),
             ),
             AnimatedRotation(
               turns: isExpandable && isExpanded ? 0.25 : 0,
               duration: const Duration(milliseconds: 300),
-              child: const Icon(
-                Icons.chevron_right,
-                color: Colors.grey,
-              ),
+              child: const Icon(Icons.chevron_right, color: Colors.grey),
             ),
           ],
         ),
@@ -194,7 +191,7 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+      child: Divider(height: 1, thickness: 1, color: Color(0xFF3A3A3A)),
     );
   }
 }
@@ -255,10 +252,7 @@ class _TripHistoryContent extends StatelessWidget {
   final List<MockTripHistory> trips;
   final VoidCallback? onTap;
 
-  const _TripHistoryContent({
-    required this.trips,
-    this.onTap,
-  });
+  const _TripHistoryContent({required this.trips, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -269,10 +263,7 @@ class _TripHistoryContent extends StatelessWidget {
         children: [
           for (int i = 0; i < trips.length; i++) ...[
             if (i > 0) const SizedBox(height: 12),
-            TripHistoryCard(
-              trip: trips[i],
-              onTap: onTap,
-            ),
+            TripHistoryCard(trip: trips[i], onTap: onTap),
           ],
         ],
       ),

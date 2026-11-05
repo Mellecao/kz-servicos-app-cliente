@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:kz_servicos_app/core/utils/kz_format.dart';
 import '../../domain/entities/flash_proposal.dart';
 
 class FlashProposalCard extends StatelessWidget {
@@ -13,7 +13,6 @@ class FlashProposalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final money = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     return Card(
       child: ListTile(
         leading: CircleAvatar(
@@ -32,11 +31,11 @@ class FlashProposalCard extends StatelessWidget {
             Text(proposal.vehicleLabel),
             Text(proposal.etaMinutes == null
                 ? 'ETA indisponível'
-                : '${proposal.etaMinutes!.round()} min até você'),
+                : '${proposal.etaMinutes!.round()} min de distância'),
           ],
         ),
         trailing: Text(
-          money.format(proposal.offeredPrice),
+          formatKz(proposal.offeredPrice),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         onTap: onTap,

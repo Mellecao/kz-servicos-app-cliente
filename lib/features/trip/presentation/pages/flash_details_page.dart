@@ -43,7 +43,7 @@ class _FlashDetailsPageState extends State<FlashDetailsPage> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Detalhes da corrida Flash')),
+        appBar: AppBar(title: const Text('Detalhes da viagem Flash')),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [

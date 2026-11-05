@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kz_servicos_app/core/constants/app_brand.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
@@ -9,7 +10,6 @@ import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dar
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 
 class ScheduledTripsPage extends StatelessWidget {
   const ScheduledTripsPage({super.key});
@@ -20,13 +20,15 @@ class ScheduledTripsPage extends StatelessWidget {
       listener: (context, state) {
         if (state is ScheduledTripCancelled) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Uma corrida foi cancelada pela KZ.')),
+            SnackBar(
+              content: Text('Uma viagem foi cancelada pela ${AppBrand.name}.'),
+            ),
           );
           context.go('/trip');
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.sheetBackground,
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -63,30 +65,10 @@ class ScheduledTripsPage extends StatelessWidget {
                 ),
               ],
             ),
-            Positioned(
-              bottom: 24,
-              left: 20,
-              right: 20,
-              child: TripBottomNav(
-                selectedIndex: 1,
-                onItemSelected: (index) => _onNavTap(context, index),
-              ),
-            ),
           ],
         ),
       ),
     );
-  }
-
-  void _onNavTap(BuildContext context, int index) {
-    if (index == 0) {
-      context.go('/trip');
-    } else if (index == 2) {
-      context.go('/services');
-    } else if (index == 3) {
-      context.go('/profile');
-    }
-    // index == 1 is Agendamentos — already on this page, do nothing
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -109,7 +91,7 @@ class ScheduledTripsPage extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'OutfitBlack',
                 fontSize: 20,
-                color: AppColors.textPrimary,
+                color: AppColors.sheetTextPrimary,
               ),
             ),
           ),

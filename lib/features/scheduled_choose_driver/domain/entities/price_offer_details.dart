@@ -139,7 +139,7 @@ class PriceOfferDetails {
     final value = raw is Map<String, dynamic> ? raw['formatted_address'] : null;
     return value is String && value.isNotEmpty
         ? value
-        : 'Endereço não informado';
+        : 'Morada não indicada';
   }
 }
 

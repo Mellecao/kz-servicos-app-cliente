@@ -38,10 +38,10 @@ class ScheduledTripCard extends StatelessWidget {
         'scheduled' => 'Agendada',
         'open' => 'Pendente',
         'under_review' => 'Em análise',
-        'searching_drivers' => 'Buscando motorista',
+        'searching_drivers' => 'À procura de motorista',
         'awaiting_client_confirmation' ||
         'awaiting_driver_confirmation' =>
-          'Aguardando confirmação',
+          'A aguardar confirmação',
         'started' => 'Em andamento',
         _ => trip.status,
       };

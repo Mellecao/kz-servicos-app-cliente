@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,7 +10,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/config/support_contact.dart';
+import 'package:kz_servicos_app/core/constants/app_brand.dart';
+import 'package:kz_servicos_app/core/constants/app_maps.dart';
+import 'package:kz_servicos_app/core/utils/angola_time.dart';
+import 'package:kz_servicos_app/core/utils/kz_format.dart';
 import 'package:kz_servicos_app/core/maps/kz_map.dart';
+import 'package:kz_servicos_app/core/widgets/brand_banner.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/trip/data/models/address_model.dart';
@@ -24,6 +29,9 @@ import 'package:kz_servicos_app/features/trip/data/services/marker_animator.dart
 import 'package:kz_servicos_app/features/trip/data/services/place_details_service.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_data.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_booking_flow.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_luggage_data.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_passenger_data.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_execution_stage.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_request.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_stop.dart';
@@ -33,7 +41,12 @@ import 'package:kz_servicos_app/features/trip/presentation/cubit/trip_creation_s
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/address_search_sheet.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_details_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/round_trip_address_sheet.dart';
+
+import 'package:kz_servicos_app/features/trip/presentation/widgets/payment_method_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_names_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/luggage_panel.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/ride_request_panel.dart';
 import 'package:kz_servicos_app/features/trip/data/models/driver_candidate_model.dart';
 import 'package:kz_servicos_app/features/trip/data/models/mock_driver.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/driver_candidate.dart';
@@ -46,9 +59,9 @@ import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_select
 import 'package:kz_servicos_app/features/trip/presentation/widgets/live_trip_bottom_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/searching_driver_popup.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/scheduled_trip_card.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
+
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_details_sheet.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_type_choice_sheet.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_date_time_panel.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/flash_trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/scheduled_choose_driver/data/repositories/scheduled_direct_request_repository.dart';
@@ -63,12 +76,17 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/driver_arrived_sheet.dart';
 import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_top_bar.dart';
+import 'package:kz_servicos_app/features/trip/presentation/widgets/return_details_panel.dart';
 
 enum TripFlowStep {
   idle,
   pickOnMap,
   confirmPickup,
+  dateTime,
   passengerDetails,
+  luggageDetails,
+  returnDetails,
+  paymentMethod,
   searchingDriver,
   driverSelection,
   driverSelected,
@@ -89,9 +107,15 @@ class TripHomePage extends StatefulWidget {
 
 class _TripHomePageState extends State<TripHomePage>
     with TickerProviderStateMixin, WidgetsBindingObserver {
-  static const List<String> _bannerAssets = [
-    'public/assets/banner.png',
-    'public/assets/banner2.png',
+  static const List<({String title, String subtitle})> _banners = [
+    (
+      title: 'Precisa de ajuda em casa?',
+      subtitle: 'Peça um profissional em poucos toques.',
+    ),
+    (
+      title: 'Viagens e serviços num só lugar',
+      subtitle: 'Peça uma viagem ou um profissional.',
+    ),
   ];
 
   final Completer<KzMapController> _mapController = Completer();
@@ -113,12 +137,12 @@ class _TripHomePageState extends State<TripHomePage>
   List<LatLng> _routePoints = [];
 
   static const CameraPosition _defaultCamera = CameraPosition(
-    target: LatLng(-23.5505, -46.6333),
+    target: AppMaps.defaultCenter,
     zoom: 16.5,
   );
 
   LatLng? _currentLocation;
-  int _selectedNavIndex = 0;
+
   TripFlowStep _step = TripFlowStep.idle;
 
   LatLng? _destinationLatLng;
@@ -131,10 +155,15 @@ class _TripHomePageState extends State<TripHomePage>
   String? _confirmPickupAddress;
   bool _panelMinimized = false;
   List<LatLng> _stops = [];
+  List<PlacePrediction> _stopPredictions = [];
 
   // Place IDs from address selection
   String? _pickupPlaceId;
   String? _destinationPlaceId;
+  String? _returnPickupPlaceId;
+  String? _returnDestinationPlaceId;
+  LatLng? _returnPickupLatLng;
+  LatLng? _returnDestinationLatLng;
 
   // Driver flow state
   MockDriver? _selectedDriver;
@@ -150,6 +179,13 @@ class _TripHomePageState extends State<TripHomePage>
   String? _destinationAddress;
   BitmapDescriptor? _cachedBlueDotIcon;
   bool _isCreatingTrip = false;
+  bool _paymentConfirmed = false;
+  bool _isImmediateRequest = false;
+  TripBookingMode _bookingMode = TripBookingMode.immediate;
+  DateTime? _scheduledDateTimeDraft;
+  int? _currentClientAge;
+  List<TripPassengerData> _passengers = const [];
+  List<TripLuggageData> _luggage = const [];
   PassengerFormData? _lastPassengerFormData;
   PassengerFormData? _outboundPassengerFormData;
   PassengerFormData? _returnPassengerFormData;
@@ -231,6 +267,7 @@ class _TripHomePageState extends State<TripHomePage>
     _loadScheduledTrips();
     _loadPendingConfirmations();
     unawaited(_loadRecentDestinations());
+    unawaited(_loadCurrentClientAge());
     _subscribeToChatMessages();
     unawaited(_loadUnreadMessages());
     _startBannerCarousel();
@@ -256,13 +293,38 @@ class _TripHomePageState extends State<TripHomePage>
     _bannerTimer?.cancel();
     _bannerTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       if (!mounted || !_bannerController.hasClients) return;
-      final nextIndex = (_currentBannerIndex + 1) % _bannerAssets.length;
+      final nextIndex = (_currentBannerIndex + 1) % _banners.length;
       _bannerController.animateToPage(
         nextIndex,
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeOutCubic,
       );
     });
+  }
+
+  Future<void> _loadCurrentClientAge() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final row = await Supabase.instance.client
+          .from('users')
+          .select('date_of_birth')
+          .eq('id', userId)
+          .maybeSingle();
+      final raw = row?['date_of_birth'] as String?;
+      if (raw == null || !mounted) return;
+      final birthDate = DateTime.tryParse(raw);
+      if (birthDate == null) return;
+      final now = DateTime.now();
+      var age = now.year - birthDate.year;
+      if (now.month < birthDate.month ||
+          (now.month == birthDate.month && now.day < birthDate.day)) {
+        age--;
+      }
+      if (mounted) setState(() => _currentClientAge = age);
+    } catch (error) {
+      debugPrint('[KZ] Could not load client age: $error');
+    }
   }
 
   void _loadScheduledTrips() {
@@ -377,7 +439,7 @@ class _TripHomePageState extends State<TripHomePage>
     final formattedAddress = _destinationAddress;
     if (userId == null || position == null || formattedAddress == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecione um destino antes de salvar.')),
+        const SnackBar(content: Text('Selecione um destino antes de guardar.')),
       );
       return;
     }
@@ -435,15 +497,15 @@ class _TripHomePageState extends State<TripHomePage>
         SnackBar(
           content: Text(
             label == 'home'
-                ? 'Endereço de casa salvo.'
-                : 'Endereço de trabalho salvo.',
+                ? 'Morada de casa guardada.'
+                : 'Morada de trabalho guardada.',
           ),
         ),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível salvar o endereço.')),
+        const SnackBar(content: Text('Não foi possível guardar a morada.')),
       );
     }
   }
@@ -508,45 +570,14 @@ class _TripHomePageState extends State<TripHomePage>
     }
   }
 
-  Future<void> _openSearch() async {
-    final tripKind = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => PointerInterceptor(
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: const TripTypeChoiceSheet(),
-        ),
-      ),
-    );
-    if (tripKind == null || !mounted) return;
-    if (tripKind == 'flash') {
-      setState(() {
-        _isFlashRequest = true;
-        _isRoundTripRequest = false;
-        _isEditingReturnDetails = false;
-        _outboundPassengerFormData = null;
-        _returnPassengerFormData = null;
-        _lastPassengerFormData = null;
-        _scheduledTripType = 'standard';
-      });
-      _resolveCurrentAddress();
-      setState(() => _isSearchActive = true);
-      return;
-    }
-
-    // Cascade Scheduled → Cotação vs Akira.
+  Future<void> _openScheduledCascade() async {
+    // Cascade Scheduled → Cotação vs suporte.
     final override = await SystemSettingsRepository.instance
         .fetchScheduledQuoteOverride();
     if (!mounted) return;
 
-    final sp = tz.getLocation('America/Sao_Paulo');
-    final nowSp = tz.TZDateTime.now(sp);
     final availability = computeQuotationAvailability(
-      nowInSp: nowSp,
+      nowInLuanda: AngolaTime.now(),
       adminOverride: override,
     );
 
@@ -586,12 +617,17 @@ class _TripHomePageState extends State<TripHomePage>
     final isRoundTrip = await _showTripTypePicker();
     if (isRoundTrip == null || !mounted) return;
     setState(() {
+      _isImmediateRequest = false;
       _isFlashRequest = false;
       _isRoundTripRequest = isRoundTrip;
       _isEditingReturnDetails = false;
       _outboundPassengerFormData = null;
       _returnPassengerFormData = null;
       _lastPassengerFormData = null;
+      _returnPickupPlaceId = null;
+      _returnDestinationPlaceId = null;
+      _returnPickupLatLng = null;
+      _returnDestinationLatLng = null;
       _scheduledTripType = secondChoice!;
     });
     _resolveCurrentAddress();
@@ -637,7 +673,7 @@ class _TripHomePageState extends State<TripHomePage>
               _TripTypeOption(
                 icon: Icons.sync_alt_rounded,
                 title: 'Ida e volta',
-                subtitle: 'A corrida será sinalizada para retorno',
+                subtitle: 'A viagem será sinalizada para retorno',
                 onTap: () => Navigator.of(context).pop(true),
               ),
             ],
@@ -745,6 +781,113 @@ class _TripHomePageState extends State<TripHomePage>
     await _drawSelectedRoutePreview(fitCamera: _destinationLatLng != null);
   }
 
+  Future<LatLng?> _latLngForPrediction(PlacePrediction prediction) async {
+    if (prediction.placeId == '_current_location_') return _currentLocation;
+    return _placeDetailsService.getPlaceLatLng(prediction.placeId);
+  }
+
+  Future<void> _onImmediateRideConfirmed(RideRequestSelection selection) async {
+    final predictions = <PlacePrediction>[
+      selection.outboundPickup,
+      selection.outboundDropoff,
+      ...selection.outboundStops,
+      if (selection.returnPickup != null) selection.returnPickup!,
+      if (selection.returnDropoff != null) selection.returnDropoff!,
+    ];
+    final locations = await Future.wait(predictions.map(_latLngForPrediction));
+    if (!mounted || locations.any((location) => location == null)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível localizar uma das moradas.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    var index = 0;
+    final pickup = locations[index++]!;
+    final dropoff = locations[index++]!;
+    final stopLocations = <LatLng>[
+      for (var i = 0; i < selection.outboundStops.length; i++)
+        locations[index++]!,
+    ];
+    final returnPickup = selection.isRoundTrip ? locations[index++]! : null;
+    final returnDropoff = selection.isRoundTrip ? locations[index++]! : null;
+
+    setState(() {
+      _bookingMode = selection.mode == RideRequestMode.immediate
+          ? TripBookingMode.immediate
+          : TripBookingMode.scheduled;
+      _isImmediateRequest = _bookingMode == TripBookingMode.immediate;
+      _isFlashRequest = false;
+      _scheduledTripType = 'standard';
+      _isRoundTripRequest =
+          _bookingMode == TripBookingMode.scheduled && selection.isRoundTrip;
+      _scheduledDateTimeDraft = null;
+      _passengers = const [];
+      _luggage = const [];
+      _isEditingReturnDetails = false;
+      _outboundPassengerFormData = null;
+      _returnPassengerFormData = null;
+      _lastPassengerFormData = null;
+      _paymentConfirmed = false;
+      _pickupPlaceId = selection.outboundPickup.placeId;
+      _destinationPlaceId = selection.outboundDropoff.placeId;
+      _pickupLatLng = pickup;
+      _destinationLatLng = dropoff;
+      _pickupAddress = selection.outboundPickup.description;
+      _destinationAddress = selection.outboundDropoff.description;
+      _stopPredictions = List.of(selection.outboundStops);
+      _stops = stopLocations;
+      _returnPickupPlaceId = selection.returnPickup?.placeId;
+      _returnDestinationPlaceId = selection.returnDropoff?.placeId;
+      _returnPickupLatLng = returnPickup;
+      _returnDestinationLatLng = returnDropoff;
+      _isSearchActive = false;
+    });
+    await _showRouteAndProceed();
+  }
+
+  Future<void> _onRoundTripAddressesConfirmed(
+    RoundTripAddressSelection selection,
+  ) async {
+    final locations = await Future.wait([
+      _latLngForPrediction(selection.outboundPickup),
+      _latLngForPrediction(selection.outboundDropoff),
+      _latLngForPrediction(selection.returnPickup),
+      _latLngForPrediction(selection.returnDropoff),
+    ]);
+    if (!mounted || locations.any((location) => location == null)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível localizar uma das moradas.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _pickupPlaceId = selection.outboundPickup.placeId;
+      _destinationPlaceId = selection.outboundDropoff.placeId;
+      _returnPickupPlaceId = selection.returnPickup.placeId;
+      _returnDestinationPlaceId = selection.returnDropoff.placeId;
+      _pickupLatLng = locations[0];
+      _destinationLatLng = locations[1];
+      _returnPickupLatLng = locations[2];
+      _returnDestinationLatLng = locations[3];
+      _pickupAddress = selection.outboundPickup.description;
+      _destinationAddress = selection.outboundDropoff.description;
+      _isSearchActive = false;
+    });
+    await _showRouteAndProceed();
+  }
+
   Future<void> _onConfirmAddresses() async {
     // If pickup not explicitly set, use current location
     if (_pickupLatLng == null && _currentLocation != null) {
@@ -769,6 +912,8 @@ class _TripHomePageState extends State<TripHomePage>
     );
     if (!mounted || latLng == null) return;
     setState(() {
+      if (_stopPredictions.length >= 3) return;
+      _stopPredictions.add(prediction);
       _stops.add(latLng);
     });
   }
@@ -868,7 +1013,9 @@ class _TripHomePageState extends State<TripHomePage>
         };
         _startPulseAnimation(routePoints);
       }
-      _step = TripFlowStep.passengerDetails;
+      _step = _bookingMode == TripBookingMode.immediate
+          ? TripFlowStep.passengerDetails
+          : TripFlowStep.dateTime;
       _panelMinimized = false;
     });
     _fitBounds();
@@ -1408,7 +1555,9 @@ class _TripHomePageState extends State<TripHomePage>
     if (_pickupLatLng == null || _destinationLatLng == null) return;
     if (_isCreatingTrip) return;
 
-    if (_isRoundTripRequest && !_isEditingReturnDetails) {
+    if (_isRoundTripRequest &&
+        !_isEditingReturnDetails &&
+        formData.passengers.isEmpty) {
       setState(() {
         _outboundPassengerFormData = formData;
         _returnPassengerFormData ??= PassengerFormData(
@@ -1426,6 +1575,20 @@ class _TripHomePageState extends State<TripHomePage>
         );
         _lastPassengerFormData = _returnPassengerFormData;
         _isEditingReturnDetails = true;
+        _panelMinimized = false;
+      });
+      return;
+    }
+
+    if (_isImmediateRequest && !_paymentConfirmed) {
+      setState(() {
+        if (_isRoundTripRequest) {
+          _returnPassengerFormData = formData;
+        } else {
+          _outboundPassengerFormData = formData;
+        }
+        _lastPassengerFormData = formData;
+        _step = TripFlowStep.paymentMethod;
         _panelMinimized = false;
       });
       return;
@@ -1476,8 +1639,51 @@ class _TripHomePageState extends State<TripHomePage>
               _destinationLatLng!,
             );
 
-      if (pickupAddress == null || dropoffAddress == null) {
+      TripAddress? returnPickupAddress;
+      TripAddress? returnDropoffAddress;
+      if (_isRoundTripRequest) {
+        if (_returnPickupPlaceId == null ||
+            _returnDestinationPlaceId == null ||
+            _returnPickupLatLng == null ||
+            _returnDestinationLatLng == null) {
+          throw Exception('Return addresses were not selected');
+        }
+        returnPickupAddress = _returnPickupPlaceId == '_current_location_'
+            ? await _geocodingAddressService.reverseGeocodeToAddress(
+                _returnPickupLatLng!,
+              )
+            : await _geocodingAddressService.getAddressFromPlaceId(
+                _returnPickupPlaceId!,
+              );
+        returnDropoffAddress = _returnDestinationPlaceId == '_current_location_'
+            ? await _geocodingAddressService.reverseGeocodeToAddress(
+                _returnDestinationLatLng!,
+              )
+            : await _geocodingAddressService.getAddressFromPlaceId(
+                _returnDestinationPlaceId!,
+              );
+      }
+
+      if (pickupAddress == null ||
+          dropoffAddress == null ||
+          (_isRoundTripRequest &&
+              (returnPickupAddress == null || returnDropoffAddress == null))) {
         throw Exception('Could not resolve addresses');
+      }
+
+      final stopAddresses = <TripAddress>[];
+      for (final prediction in _stopPredictions) {
+        final address = prediction.placeId == '_current_location_'
+            ? await _geocodingAddressService.reverseGeocodeToAddress(
+                _currentLocation!,
+              )
+            : await _geocodingAddressService.getAddressFromPlaceId(
+                prediction.placeId,
+              );
+        if (address == null) {
+          throw Exception('Could not resolve stop address');
+        }
+        stopAddresses.add(address);
       }
 
       // ── Flash flow ─────────────────────────────────────────────
@@ -1503,7 +1709,7 @@ class _TripHomePageState extends State<TripHomePage>
       }
 
       // ── Escolha seu Motorista (Subprojeto 2B) ────────────────
-      // Ao invés de criar a trip aqui, persistimos os endereços e
+      // Ao invés de criar a trip aqui, persistimos os moradas e
       // navegamos pra tela de seleção de motorista; a trip só é
       // criada quando o cliente escolhe o motorista e envia solicitação.
       if (_scheduledTripType == 'scheduled_choose_driver') {
@@ -1511,12 +1717,14 @@ class _TripHomePageState extends State<TripHomePage>
         final ids = await directRepo.persistAddressesForDirectRequest(
           pickupAddress: pickupAddress,
           dropoffAddress: dropoffAddress,
+          returnPickupAddress: returnPickupAddress,
+          returnDropoffAddress: returnDropoffAddress,
         );
         if (!mounted) return;
         // Preserva o passo passengerDetails para que, se o cliente
         // voltar da DriverSelectionPage, ele reveja o painel de detalhes
         // com dados intactos (e ao voltar de novo, volta pro picker de
-        // endereços, e por último ao home).
+        // moradas, e por último ao home).
         _stopSearchRadar();
         setState(() {
           _step = TripFlowStep.passengerDetails;
@@ -1531,7 +1739,27 @@ class _TripHomePageState extends State<TripHomePage>
             'serviceCategoryId': ids.serviceCategoryId,
             'passengerCount': outboundFormData.adults,
             'scheduledDatetime': outboundFormData.scheduledDatetime,
+            'isRoundTrip': _isRoundTripRequest,
+            'returnDatetime': returnFormData?.scheduledDatetime,
+            'returnPickupAddressId': ids.returnPickupAddressId,
+            'returnDropoffAddressId': ids.returnDropoffAddressId,
+            'pickupLatitude': _pickupLatLng?.latitude,
+            'pickupLongitude': _pickupLatLng?.longitude,
+            'dropoffLatitude': _destinationLatLng?.latitude,
+            'dropoffLongitude': _destinationLatLng?.longitude,
             'observation': outboundFormData.observations,
+            'onQuotation': () async {
+              if (!mounted) return;
+              context.pop();
+              setState(() {
+                _scheduledTripType = tripTypeForQuotation();
+                _paymentConfirmed = true;
+              });
+              await _onPassengerDetailsConfirmed(
+                returnFormData ?? outboundFormData,
+              );
+              _paymentConfirmed = false;
+            },
           },
         );
         return;
@@ -1553,7 +1781,12 @@ class _TripHomePageState extends State<TripHomePage>
         paymentMethod: outboundFormData.paymentMethod,
         isRoundTrip: _isRoundTripRequest,
         returnDatetime: returnFormData?.scheduledDatetime,
+        returnPickupAddress: returnPickupAddress,
+        returnDropoffAddress: returnDropoffAddress,
         tripType: _scheduledTripType,
+        stops: stopAddresses,
+        passengers: outboundFormData.passengers,
+        luggage: outboundFormData.luggage,
       );
 
       // Submit via cubit
@@ -1568,13 +1801,114 @@ class _TripHomePageState extends State<TripHomePage>
             backgroundColor: Colors.red,
           ),
         );
-        setState(() => _step = TripFlowStep.passengerDetails);
+        setState(
+          () => _step = (_passengers.isNotEmpty || _isImmediateRequest)
+              ? TripFlowStep.paymentMethod
+              : TripFlowStep.passengerDetails,
+        );
       }
     } finally {
       if (mounted) {
         setState(() => _isCreatingTrip = false);
       }
     }
+  }
+
+  void _onScheduledDateConfirmed(DateTime value) {
+    setState(() {
+      _scheduledDateTimeDraft = value;
+      _step = TripFlowStep.passengerDetails;
+      _panelMinimized = false;
+    });
+  }
+
+  void _onPassengersConfirmed(List<PassengerName> passengers) {
+    final detailed = [
+      for (final passenger in passengers)
+        TripPassengerData(name: passenger.name, age: passenger.age!),
+    ];
+    final formData = PassengerFormData(
+      adults: detailed.length,
+      scheduledDatetime: _bookingMode == TripBookingMode.immediate
+          ? DateTime.now()
+          : _scheduledDateTimeDraft!,
+      hasChildren: detailed.any((passenger) => passenger.needsCarSeat),
+      passengers: detailed,
+      isRoundTrip: _isRoundTripRequest,
+    );
+    setState(() {
+      _passengers = detailed;
+      _outboundPassengerFormData = formData;
+      _lastPassengerFormData = formData;
+      _step = TripFlowStep.luggageDetails;
+    });
+  }
+
+  String _normalizedLuggageSize(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'p' || normalized.contains('pequen')) return 'small';
+    if (normalized == 'm' ||
+        normalized.contains('médi') ||
+        normalized.contains('medi')) {
+      return 'medium';
+    }
+    if (normalized == 'xg' || normalized.contains('extra'))
+      return 'extra_large';
+    return 'large';
+  }
+
+  void _onLuggageConfirmed(List<LuggageItem> items) {
+    final detailed = [
+      for (final item in items)
+        TripLuggageData(
+          type: item.type,
+          size: _normalizedLuggageSize(item.size),
+          weightKg: item.weightKg?.toDouble(),
+        ),
+    ];
+    final current = _outboundPassengerFormData!;
+    final updated = current.copyWith(
+      hasLuggage: detailed.isNotEmpty,
+      luggage: detailed,
+    );
+    setState(() {
+      _luggage = detailed;
+      _outboundPassengerFormData = updated;
+      _returnPassengerFormData = null;
+      _lastPassengerFormData = updated;
+      _step = _isRoundTripRequest
+          ? TripFlowStep.returnDetails
+          : TripFlowStep.paymentMethod;
+    });
+  }
+
+  void _onReturnDetailsConfirmed(PassengerFormData value) {
+    final merged = value.copyWith(isRoundTrip: true);
+    setState(() {
+      _returnPassengerFormData = merged;
+      _lastPassengerFormData = merged;
+      _step = TripFlowStep.paymentMethod;
+    });
+  }
+
+  Future<void> _onPaymentMethodConfirmed(String paymentMethod) async {
+    final outbound = (_outboundPassengerFormData ?? _lastPassengerFormData)
+        ?.copyWith(paymentMethod: paymentMethod);
+    final inbound = _returnPassengerFormData?.copyWith(
+      paymentMethod: paymentMethod,
+    );
+    final finalData = _isRoundTripRequest ? inbound : outbound;
+    if (outbound == null || finalData == null) return;
+
+    setState(() {
+      _outboundPassengerFormData = outbound;
+      _returnPassengerFormData = inbound;
+      _lastPassengerFormData = finalData;
+      _paymentConfirmed = true;
+      _scheduledTripType = tripTypeAfterPayment(_bookingMode);
+    });
+    await _onPassengerDetailsConfirmed(finalData);
+    _paymentConfirmed = false;
   }
 
   // ──── Realtime tracking ────
@@ -1775,7 +2109,7 @@ class _TripHomePageState extends State<TripHomePage>
     _stopTripTracking();
     _resetToIdle();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Esta corrida foi cancelada pela KZ.')),
+      SnackBar(content: Text('Esta viagem foi cancelada pela ${AppBrand.name}.')),
     );
     context.go('/trip');
   }
@@ -2018,7 +2352,7 @@ class _TripHomePageState extends State<TripHomePage>
       final destMarker = Marker(
         markerId: const MarkerId('destination'),
         position: _destinationLatLng!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
       );
       setState(() {
         _routePoints = result.points;
@@ -2269,7 +2603,7 @@ class _TripHomePageState extends State<TripHomePage>
     if (!mounted) return;
     _stopSearchRadar();
     setState(() {
-      _step = TripFlowStep.passengerDetails;
+      _step = TripFlowStep.paymentMethod;
       _panelMinimized = false;
       _isCreatingTrip = false;
       _approvedCandidates = [];
@@ -2293,8 +2627,19 @@ class _TripHomePageState extends State<TripHomePage>
       _destinationLatLng = null;
       _pickupLatLng = null;
       _stops = [];
+      _stopPredictions = [];
+      _paymentConfirmed = false;
+      _isImmediateRequest = false;
+      _bookingMode = TripBookingMode.immediate;
+      _scheduledDateTimeDraft = null;
+      _passengers = const [];
+      _luggage = const [];
       _pickupPlaceId = null;
       _destinationPlaceId = null;
+      _returnPickupPlaceId = null;
+      _returnDestinationPlaceId = null;
+      _returnPickupLatLng = null;
+      _returnDestinationLatLng = null;
       _approvedCandidates = [];
       _searchingCanGoHome = false;
       _lastPassengerFormData = null;
@@ -2308,6 +2653,28 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   void _onDetailsBack() {
+    if (_step == TripFlowStep.paymentMethod) {
+      setState(() {
+        _step = _isRoundTripRequest
+            ? TripFlowStep.returnDetails
+            : TripFlowStep.luggageDetails;
+        _paymentConfirmed = false;
+        _panelMinimized = false;
+      });
+      return;
+    }
+
+    if (_step == TripFlowStep.luggageDetails) {
+      setState(() => _step = TripFlowStep.passengerDetails);
+      return;
+    }
+
+    if (_step == TripFlowStep.passengerDetails &&
+        _bookingMode == TripBookingMode.scheduled) {
+      setState(() => _step = TripFlowStep.dateTime);
+      return;
+    }
+
     if (_isRoundTripRequest && _isEditingReturnDetails) {
       setState(() {
         _returnPassengerFormData = _lastPassengerFormData;
@@ -2338,6 +2705,13 @@ class _TripHomePageState extends State<TripHomePage>
       _destinationLatLng = null;
       _pickupLatLng = null;
       _stops = [];
+      _stopPredictions = [];
+      _paymentConfirmed = false;
+      _isImmediateRequest = false;
+      _bookingMode = TripBookingMode.immediate;
+      _scheduledDateTimeDraft = null;
+      _passengers = const [];
+      _luggage = const [];
       _selectedDriver = null;
       _driverToPickupRoute = [];
       _driverRouteIndex = 0;
@@ -2347,6 +2721,10 @@ class _TripHomePageState extends State<TripHomePage>
       _destinationAddress = null;
       _pickupPlaceId = null;
       _destinationPlaceId = null;
+      _returnPickupPlaceId = null;
+      _returnDestinationPlaceId = null;
+      _returnPickupLatLng = null;
+      _returnDestinationLatLng = null;
       _outboundPassengerFormData = null;
       _returnPassengerFormData = null;
       _isEditingReturnDetails = false;
@@ -2389,7 +2767,7 @@ class _TripHomePageState extends State<TripHomePage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Erro ao cancelar corrida. Tente novamente.'),
+            content: Text('Erro ao cancelar a viagem. Tente novamente.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -2403,7 +2781,7 @@ class _TripHomePageState extends State<TripHomePage>
     _isCancellingActiveTrip = false;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Corrida cancelada.')));
+    ).showSnackBar(const SnackBar(content: Text('Viagem cancelada.')));
   }
 
   void _onSearchingComplete() {
@@ -2685,20 +3063,18 @@ class _TripHomePageState extends State<TripHomePage>
   }
 
   Future<void> _onReportProblem() async {
-    // Número do suporte KZ no WhatsApp (sem +, formato internacional).
-    const supportNumber = '5511999999999';
     final tripId = _activeTripId ?? '—';
     final driver = _activeDriverName ?? 'motorista';
     final origin = _pickupAddress ?? '—';
     final destination = _destinationAddress ?? '—';
     final message =
-        'Olá, tive um problema com a corrida.\n'
-        'Viagem: $tripId\n'
+        'Olá, tive um problema com a viagem.\n'
+        'Referência: $tripId\n'
         'Motorista: $driver\n'
         'Origem: $origin\n'
         'Destino: $destination';
     final url = Uri.parse(
-      'https://wa.me/$supportNumber?text=${Uri.encodeComponent(message)}',
+      'https://wa.me/$supportWhatsappE164?text=${Uri.encodeComponent(message)}',
     );
     try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -2724,6 +3100,13 @@ class _TripHomePageState extends State<TripHomePage>
       _destinationLatLng = null;
       _pickupLatLng = null;
       _stops = [];
+      _stopPredictions = [];
+      _paymentConfirmed = false;
+      _isImmediateRequest = false;
+      _bookingMode = TripBookingMode.immediate;
+      _scheduledDateTimeDraft = null;
+      _passengers = const [];
+      _luggage = const [];
       _selectedDriver = null;
       _driverToPickupRoute = [];
       _driverRouteIndex = 0;
@@ -2733,6 +3116,10 @@ class _TripHomePageState extends State<TripHomePage>
       _destinationAddress = null;
       _pickupPlaceId = null;
       _destinationPlaceId = null;
+      _returnPickupPlaceId = null;
+      _returnDestinationPlaceId = null;
+      _returnPickupLatLng = null;
+      _returnDestinationLatLng = null;
       _outboundPassengerFormData = null;
       _returnPassengerFormData = null;
       _lastPassengerFormData = null;
@@ -2776,6 +3163,13 @@ class _TripHomePageState extends State<TripHomePage>
       // _pickupAddress, _destinationAddress — they're needed for the
       // subsequent driverEnRoute → tripStarted tracking phases.
       _stops = [];
+      _stopPredictions = [];
+      _paymentConfirmed = false;
+      _isImmediateRequest = false;
+      _bookingMode = TripBookingMode.immediate;
+      _scheduledDateTimeDraft = null;
+      _passengers = const [];
+      _luggage = const [];
       _selectedDriver = null;
       _driverToPickupRoute = [];
       _driverRouteIndex = 0;
@@ -2784,6 +3178,10 @@ class _TripHomePageState extends State<TripHomePage>
       _driverDistanceMeters = 0;
       _pickupPlaceId = null;
       _destinationPlaceId = null;
+      _returnPickupPlaceId = null;
+      _returnDestinationPlaceId = null;
+      _returnPickupLatLng = null;
+      _returnDestinationLatLng = null;
       _isCreatingTrip = false;
       _approvedCandidates = [];
       _searchingTripId = null;
@@ -3028,7 +3426,11 @@ class _TripHomePageState extends State<TripHomePage>
                   backgroundColor: Colors.red,
                 ),
               );
-              setState(() => _step = TripFlowStep.passengerDetails);
+              setState(
+                () => _step = (_passengers.isNotEmpty || _isImmediateRequest)
+                    ? TripFlowStep.paymentMethod
+                    : TripFlowStep.passengerDetails,
+              );
             }
           },
         ),
@@ -3042,14 +3444,12 @@ class _TripHomePageState extends State<TripHomePage>
               _buildTopBanner(),
             if (_step == TripFlowStep.idle && !_isSearchActive)
               _buildNotificationButton(),
-            _buildFakeSearchBar(),
             _buildScheduledTripsList(),
-            _buildBottomNav(),
             if (_totalUnreadMessages > 0) _buildChatNotificationBubble(),
             _buildMapTapOverlay(),
             if (!_isSearchActive) _buildBottomPanel(),
-            if (_step == TripFlowStep.passengerDetails ||
-                _step == TripFlowStep.driverSelection ||
+
+            if (_step == TripFlowStep.driverSelection ||
                 _step == TripFlowStep.searchingDriver)
               _buildDetailsBackButton(),
             if (_step == TripFlowStep.confirmPickup)
@@ -3349,7 +3749,7 @@ class _TripHomePageState extends State<TripHomePage>
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.highlight,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.onPrimary,
                     elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -3462,15 +3862,15 @@ class _TripHomePageState extends State<TripHomePage>
                   width: double.infinity,
                   child: PageView.builder(
                     controller: _bannerController,
-                    itemCount: _bannerAssets.length,
+                    itemCount: _banners.length,
                     onPageChanged: (index) {
                       setState(() => _currentBannerIndex = index);
                     },
                     itemBuilder: (context, index) {
-                      return Image.asset(
-                        _bannerAssets[index],
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
+                      final banner = _banners[index];
+                      return BrandBanner(
+                        title: banner.title,
+                        subtitle: banner.subtitle,
                       );
                     },
                   ),
@@ -3510,7 +3910,7 @@ class _TripHomePageState extends State<TripHomePage>
       child: _centeredTabletWidth(
         PointerInterceptor(
           child: GestureDetector(
-            onTap: _openSearch,
+            onTap: _openScheduledCascade,
             child: Container(
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
@@ -3575,20 +3975,38 @@ class _TripHomePageState extends State<TripHomePage>
             );
           },
           child: _isSearchActive
-              ? AddressSearchSheet(
-                  key: const ValueKey('search_sheet'),
-                  currentLocation: _currentLocation,
-                  initialPickupAddress: _currentAddress,
-                  onDestinationSelected: _onDestinationSelected,
-                  onPickupSelected: _onPickupSelected,
-                  onStopSelected: _onStopSelected,
-                  onDismissed: _dismissSearch,
-                  onSelectPickupOnMap: _enterPickOnMapMode,
-                  onConfirmAddresses: () => unawaited(_onConfirmAddresses()),
-                  recentDestinations: _recentDestinations,
-                  onRecentDestinationSelected: _onRecentDestinationSelected,
-                  onSaveCurrentDestinationAs: _saveCurrentDestinationAs,
-                )
+              ? (_isRoundTripRequest && !_isFlashRequest
+                    ? RoundTripAddressSheet(
+                        key: const ValueKey('round_trip_search_sheet'),
+                        currentLocation: _currentLocation,
+                        initialOutboundPickup: _currentLocation == null
+                            ? null
+                            : const PlacePrediction(
+                                placeId: '_current_location_',
+                                description: 'A minha localização atual',
+                                matchedSubstrings: [],
+                              ),
+                        onDismissed: _dismissSearch,
+                        onConfirmed: (selection) => unawaited(
+                          _onRoundTripAddressesConfirmed(selection),
+                        ),
+                      )
+                    : AddressSearchSheet(
+                        key: const ValueKey('search_sheet'),
+                        currentLocation: _currentLocation,
+                        initialPickupAddress: _currentAddress,
+                        onDestinationSelected: _onDestinationSelected,
+                        onPickupSelected: _onPickupSelected,
+                        onStopSelected: _onStopSelected,
+                        onDismissed: _dismissSearch,
+                        onSelectPickupOnMap: _enterPickOnMapMode,
+                        onConfirmAddresses: () =>
+                            unawaited(_onConfirmAddresses()),
+                        recentDestinations: _recentDestinations,
+                        onRecentDestinationSelected:
+                            _onRecentDestinationSelected,
+                        onSaveCurrentDestinationAs: _saveCurrentDestinationAs,
+                      ))
               : const SizedBox.shrink(key: ValueKey('no_search')),
         ),
       ),
@@ -3692,25 +4110,99 @@ class _TripHomePageState extends State<TripHomePage>
 
   Widget _panelForStep() {
     switch (_step) {
+      case TripFlowStep.idle:
+        return RideRequestPanel(
+          key: const ValueKey('rideRequest'),
+          currentLocation: _currentLocation,
+          initialPickupAddress: _currentAddress,
+          onScheduleRequested: () {},
+          onModeChanged: (mode) {
+            setState(() {
+              _bookingMode = mode == RideRequestMode.immediate
+                  ? TripBookingMode.immediate
+                  : TripBookingMode.scheduled;
+              _isImmediateRequest = _bookingMode == TripBookingMode.immediate;
+              if (_isImmediateRequest) _isRoundTripRequest = false;
+            });
+          },
+          onConfirm: (selection) =>
+              unawaited(_onImmediateRideConfirmed(selection)),
+        );
       case TripFlowStep.pickOnMap:
         return KeyedSubtree(
           key: const ValueKey('pickOnMap'),
           child: _buildSelectLocationButton(),
         );
+      case TripFlowStep.dateTime:
+        return TripDateTimePanel(
+          key: const ValueKey('dateTime'),
+          initialValue: _scheduledDateTimeDraft,
+          onBack: _onDetailsBack,
+          onConfirm: _onScheduledDateConfirmed,
+        );
       case TripFlowStep.passengerDetails:
-        return KeyedSubtree(
+        final authState = context.read<AuthCubit>().state;
+        final clientName = authState is AuthSuccess
+            ? authState.user.fullName
+            : 'Cliente';
+        return PassengerNamesPanel(
           key: const ValueKey('passenger'),
-          child: PassengerDetailsPanel(
-            onConfirm: _onPassengerDetailsConfirmed,
-            onBack: _onDetailsBack,
-            isMinimized: _panelMinimized,
-            onRestore: () => setState(() => _panelMinimized = false),
-            initialData: _lastPassengerFormData,
-            isRoundTrip: _isRoundTripRequest,
-            // "Agora" é exclusivo de Flash. Agendados (Cotação, Escolha
-            // seu Motorista) exigem horário futuro explícito.
-            allowImmediate: _isFlashRequest,
-          ),
+          title: _isRoundTripRequest ? 'Passageiros da ida' : 'Passageiros',
+          currentClientName: clientName,
+          currentClientAge: _currentClientAge,
+          initialPassengers: [
+            for (var i = 0; i < _passengers.length; i++)
+              PassengerName(
+                name: _passengers[i].name,
+                age: _passengers[i].age,
+                isCurrentClient: i == 0,
+              ),
+          ],
+          onBack: _onDetailsBack,
+          onContinue: _onPassengersConfirmed,
+        );
+      case TripFlowStep.returnDetails:
+        final authState = context.read<AuthCubit>().state;
+        final clientName = authState is AuthSuccess
+            ? authState.user.fullName
+            : (_passengers.isNotEmpty ? _passengers.first.name : 'Cliente');
+        return ReturnDetailsPanel(
+          key: const ValueKey('return-details'),
+          currentClientName: clientName,
+          currentClientAge: _currentClientAge,
+          initialValue: _returnPassengerFormData,
+          initialPassengers:
+              _returnPassengerFormData?.passengers ??
+              _outboundPassengerFormData?.passengers ??
+              _passengers,
+          initialLuggage:
+              _returnPassengerFormData?.luggage ??
+              _outboundPassengerFormData?.luggage ??
+              _luggage,
+          onBack: () => setState(() => _step = TripFlowStep.luggageDetails),
+          onConfirm: _onReturnDetailsConfirmed,
+        );
+      case TripFlowStep.paymentMethod:
+        return PaymentMethodPanel(
+          key: const ValueKey('paymentMethod'),
+          initialMethod: _outboundPassengerFormData?.paymentMethod ?? 'cash',
+          onConfirm: (method) => unawaited(_onPaymentMethodConfirmed(method)),
+          onBack: _onDetailsBack,
+        );
+      case TripFlowStep.luggageDetails:
+        return LuggagePanel(
+          key: const ValueKey('luggage'),
+          title: _isRoundTripRequest ? 'Bagagens da ida' : 'Bagagens',
+          initialItems: [
+            for (final item in _luggage)
+              LuggageItem(
+                type: item.type,
+                size: item.size,
+                weightKg: item.weightKg?.round(),
+              ),
+          ],
+          onBack: _onDetailsBack,
+          onContinue: _onLuggageConfirmed,
         );
       case TripFlowStep.searchingDriver:
         return const SizedBox.shrink(key: ValueKey('searching'));
@@ -3798,9 +4290,9 @@ class _TripHomePageState extends State<TripHomePage>
       case TripFlowStep.tripSummary:
         return TripSummaryPanel(
           key: const ValueKey('tripSummary'),
-          pickupAddress: _pickupAddress ?? 'Carregando...',
-          destinationAddress: _destinationAddress ?? 'Carregando...',
-          paymentMethod: 'À vista (PIX)',
+          pickupAddress: _pickupAddress ?? 'A carregar...',
+          destinationAddress: _destinationAddress ?? 'A carregar...',
+          paymentMethod: 'Numerário',
         );
       case TripFlowStep.tripRating:
         return TripRatingPanel(
@@ -3945,7 +4437,7 @@ class _TripHomePageState extends State<TripHomePage>
               if (_activeOfferedPrice != null) ...[
                 const SizedBox(width: 12),
                 Text(
-                  'R\$ ${_activeOfferedPrice!.toStringAsFixed(2)}',
+                  formatKz(_activeOfferedPrice!),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -4015,7 +4507,7 @@ class _TripHomePageState extends State<TripHomePage>
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'Em corrida',
+                      'Em viagem',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -4117,52 +4609,12 @@ class _TripHomePageState extends State<TripHomePage>
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.highlight,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.onPrimary,
             elevation: 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  // CHANGE 9: wrap TripBottomNav in BlocBuilder for scheduledCount
-  Widget _buildBottomNav() {
-    final show = _step == TripFlowStep.idle && !_isSearchActive;
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
-      bottom: show ? 24 : -120,
-      left: 20,
-      right: 20,
-      child: _centeredTabletWidth(
-        BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
-          builder: (context, state) {
-            final count = state is ScheduledTripsLoaded
-                ? state.trips.length
-                : 0;
-            return TripBottomNav(
-              selectedIndex: _selectedNavIndex,
-              scheduledCount: count,
-              onItemSelected: (index) {
-                if (index == 1) {
-                  context.go('/scheduled-trips');
-                  return;
-                }
-                if (index == 2) {
-                  context.go('/services');
-                  return;
-                }
-                if (index == 3) {
-                  context.go('/profile');
-                  return;
-                }
-                setState(() => _selectedNavIndex = index);
-              },
-            );
-          },
         ),
       ),
     );

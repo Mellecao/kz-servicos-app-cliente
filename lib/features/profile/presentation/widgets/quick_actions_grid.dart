@@ -98,7 +98,7 @@ class _QuickActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFFF6F6F6),
+          color: AppColors.sheetSurface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(
@@ -114,7 +114,7 @@ class _QuickActionCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: const BoxDecoration(
-                color: Color(0xFFE8E8E8),
+                color: Color(0xFF333333),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: AppColors.highlight, size: 22),
@@ -131,7 +131,7 @@ class _QuickActionCard extends StatelessWidget {
                       fontFamily: 'QuasimodoSemiBold',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: AppColors.sheetTextPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

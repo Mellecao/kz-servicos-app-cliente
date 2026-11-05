@@ -200,7 +200,7 @@ class DeleteAccountButton extends StatelessWidget {
             Icon(Icons.delete_forever_rounded, color: Colors.red, size: 20),
             SizedBox(width: 8),
             Text(
-              'Excluir Conta',
+              'Eliminar conta',
               style: TextStyle(
                 fontFamily: 'QuasimodoSemiBold',
                 fontSize: 15,

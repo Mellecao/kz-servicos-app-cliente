@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:kz_servicos_app/core/constants/app_maps.dart';
 import 'package:kz_servicos_app/core/maps/google_maps_api_key.dart';
 
 class DirectionsResult {
@@ -61,7 +62,8 @@ class DirectionsService {
       'origin': _formatLatLng(origin),
       'destination': _formatLatLng(destination),
       'mode': 'driving',
-      'language': 'pt-BR',
+      'language': AppMaps.languageCode,
+      'region': AppMaps.regionCode,
       'key': GoogleMapsApiKey.value,
       if (waypoints.isNotEmpty)
         'waypoints': waypoints.map(_formatLatLng).join('|'),

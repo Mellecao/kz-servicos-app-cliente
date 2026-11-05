@@ -26,7 +26,7 @@ class TripBottomNav extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(40),
-        color: Colors.white,
+        color: Colors.black,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.10),
@@ -83,22 +83,12 @@ class _NavItem extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 320),
                 curve: Curves.easeOutCubic,
-                width: isSelected ? 56 : 44,
-                height: isSelected ? 56 : 44,
-                decoration: BoxDecoration(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected
-                      ? AppColors.highlight.withValues(alpha: 0.85)
-                      : Colors.transparent,
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.highlight.withValues(alpha: 0.40),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [],
+                  color: Colors.transparent,
+                  boxShadow: [],
                 ),
                 child: Center(
                   child: AnimatedScale(
@@ -107,7 +97,7 @@ class _NavItem extends StatelessWidget {
                     curve: Curves.easeOutCubic,
                     child: Icon(
                       icon,
-                      color: isSelected ? Colors.white : Colors.black45,
+                      color: isSelected ? AppColors.highlight : Colors.white,
                       size: 24,
                     ),
                   ),
@@ -118,8 +108,10 @@ class _NavItem extends StatelessWidget {
                   top: 2,
                   right: 2,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(10),

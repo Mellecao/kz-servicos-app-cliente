@@ -142,7 +142,7 @@ class _TripRatingPanelState extends State<TripRatingPanel> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.highlight,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -196,7 +196,7 @@ class _TripRatingPanelState extends State<TripRatingPanel> {
                   : Icons.star_outline_rounded,
               size: 44,
               color: starNum <= _selectedStars
-                  ? const Color(0xFFFFC107)
+                  ? AppColors.highlight
                   : Colors.grey.shade300,
             ),
           ),

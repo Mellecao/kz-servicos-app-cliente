@@ -17,7 +17,7 @@ class CategoryInfo {
 
 const List<CategoryInfo> kCategories = [
   CategoryInfo(
-    name: 'KZ STANDARD',
+    name: 'STANDARD',
     subtitle: 'Conforto acessível',
     description:
         'Veículos sedan ou hatch em ótimo estado de conservação. '
@@ -26,17 +26,17 @@ const List<CategoryInfo> kCategories = [
     icon: Icons.directions_car_rounded,
   ),
   CategoryInfo(
-    name: 'KZ CONFORT',
+    name: 'CONFORT',
     subtitle: 'Experiência premium',
     description:
         'Veículos SUV ou sedan executivo com bancos em couro e '
         'acabamento superior. Wi-Fi a bordo, água mineral e '
-        'carregador de celular disponíveis. Para quem busca '
+        'carregador de telemóvel disponíveis. Para quem busca '
         'conforto extra na viagem.',
     icon: Icons.airline_seat_recline_extra_rounded,
   ),
   CategoryInfo(
-    name: 'KZ DELUXE',
+    name: 'DELUXE',
     subtitle: 'Luxo e exclusividade',
     description:
         'Veículos de luxo com motorista bilíngue e atendimento '
@@ -190,7 +190,7 @@ class _CategoryCard extends StatelessWidget {
               onPressed: onSelect,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.highlight,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

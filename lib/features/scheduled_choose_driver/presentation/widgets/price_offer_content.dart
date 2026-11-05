@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:kz_servicos_app/core/utils/kz_format.dart';
 
 import '../../../../core/constants/app_colors.dart';
 
@@ -23,11 +23,7 @@ class PriceOfferContent extends StatelessWidget {
   final VoidCallback onReject;
   final String? error;
 
-  String get _price => NumberFormat.currency(
-    locale: 'pt_BR',
-    symbol: 'R\$',
-    decimalDigits: 2,
-  ).format(offeredPrice).replaceAll('\u00a0', ' ');
+  String get _price => formatKz(offeredPrice);
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +34,7 @@ class PriceOfferContent extends StatelessWidget {
           const Positioned(
             left: -90,
             top: -110,
-            child: _Glow(color: Color(0xFFFFC638), size: 260),
+            child: _Glow(color: AppColors.highlight, size: 260),
           ),
 
           SafeArea(
@@ -63,7 +59,7 @@ class PriceOfferContent extends StatelessWidget {
                         _Entrance(
                           delay: 180,
                           child: _PhotoSection(
-                            title: 'Conheça seu motorista',
+                            title: 'Conheça o seu motorista',
                             subtitle: 'Fotos verificadas do perfil',
                             urls: details.driverPhotoUrls,
                             icon: Icons.verified_user_rounded,
@@ -82,7 +78,7 @@ class PriceOfferContent extends StatelessWidget {
                             delay: 260,
                             child: _PhotoSection(
                               title: 'Fotos do veículo',
-                              subtitle: 'Confira o carro que fará sua viagem',
+                              subtitle: 'Veja o carro que fará a sua viagem',
                               urls: details.vehicle!.photoUrls,
                               icon: Icons.directions_car_filled_rounded,
                             ),
@@ -161,7 +157,7 @@ class _Header extends StatelessWidget {
               ),
               SizedBox(height: 2),
               Text(
-                'Revise sua corrida',
+                'Reveja a sua viagem',
                 style: TextStyle(
                   fontFamily: 'OutfitBlack',
                   fontSize: 26,
@@ -238,7 +234,7 @@ class _PriceHero extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Preço final para a corrida descrita abaixo.',
+            'Preço final para a viagem descrita abaixo.',
             style: TextStyle(color: Color(0xFFA9A69E), fontSize: 12.5),
           ),
         ],
@@ -335,7 +331,7 @@ class _DriverCard extends StatelessWidget {
               Expanded(
                 child: _Metric(
                   icon: Icons.route_rounded,
-                  value: '${details.completedTrips} corridas',
+                  value: '${details.completedTrips} viagens',
                   label: 'concluídas',
                 ),
               ),
@@ -344,7 +340,7 @@ class _DriverCard extends StatelessWidget {
                 child: _Metric(
                   icon: Icons.shield_rounded,
                   value: 'Verificado',
-                  label: 'pela KZ',
+                  label: 'pela equipa',
                 ),
               ),
               const SizedBox(width: 9),
@@ -454,7 +450,7 @@ class _VehicleCard extends StatelessWidget {
         children: [
           const _SectionTitle(
             icon: Icons.directions_car_filled_rounded,
-            title: 'Seu veículo',
+            title: 'O seu veículo',
           ),
           const SizedBox(height: 16),
           Row(
@@ -464,7 +460,7 @@ class _VehicleCard extends StatelessWidget {
                 height: 60,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFFE59B), Color(0xFFFFC22E)],
+                    colors: [AppColors.primaryLight, AppColors.highlight],
                   ),
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -606,7 +602,7 @@ class _TripCard extends StatelessWidget {
         children: [
           const _SectionTitle(
             icon: Icons.route_rounded,
-            title: 'Detalhes da corrida',
+            title: 'Detalhes da viagem',
           ),
           const SizedBox(height: 17),
           _InfoBand(
@@ -929,7 +925,7 @@ class _BottomActions extends StatelessWidget {
                 onPressed: busy ? null : onAccept,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.highlight,
-                  foregroundColor: const Color(0xFF28220F),
+                  foregroundColor: AppColors.onPrimary,
                   disabledBackgroundColor: const Color(0xFFE4D9B6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),

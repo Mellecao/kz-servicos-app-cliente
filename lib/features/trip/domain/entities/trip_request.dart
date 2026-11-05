@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_luggage_data.dart';
+import 'package:kz_servicos_app/features/trip/domain/entities/trip_passenger_data.dart';
 
 class TripRequest extends Equatable {
   const TripRequest({
@@ -13,10 +15,15 @@ class TripRequest extends Equatable {
     this.luggageCount = 0,
     this.luggageDescription,
     this.observations,
-    this.paymentMethod = 'pix',
+    this.paymentMethod = 'cash',
     this.isRoundTrip = false,
     this.returnDatetime,
+    this.returnPickupAddress,
+    this.returnDropoffAddress,
     this.tripType = 'standard',
+    this.stops = const [],
+    this.passengers = const [],
+    this.luggage = const [],
   });
 
   final String clientId;
@@ -32,7 +39,23 @@ class TripRequest extends Equatable {
   final String paymentMethod;
   final bool isRoundTrip;
   final DateTime? returnDatetime;
+  final TripAddress? returnPickupAddress;
+  final TripAddress? returnDropoffAddress;
   final String tripType;
+  final List<TripAddress> stops;
+  final List<TripPassengerData> passengers;
+  final List<TripLuggageData> luggage;
+
+  int get aggregatePassengerCount =>
+      passengers.isEmpty ? passengerCount : passengers.length;
+
+  int get aggregateChildrenCount => passengers.isEmpty
+      ? childrenCount
+      : passengers.where((passenger) => passenger.needsCarSeat).length;
+
+  int get aggregateLuggageCount => luggage.isEmpty
+      ? luggageCount
+      : luggage.fold(0, (total, item) => total + item.quantity);
 
   /// Builds the combined observations field from form data.
   String? get combinedObservations {
@@ -58,6 +81,11 @@ class TripRequest extends Equatable {
     passengerCount,
     isRoundTrip,
     returnDatetime,
+    returnPickupAddress,
+    returnDropoffAddress,
     tripType,
+    stops,
+    passengers,
+    luggage,
   ];
 }

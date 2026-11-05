@@ -42,7 +42,7 @@ class MockConversation {
       messages: [
         MockChatMessage(
           id: 'msg_1',
-          text: 'Olá! Sua viagem foi confirmada para amanhã às 08:30.',
+          text: 'Olá! A sua viagem foi confirmada para amanhã às 08:30.',
           isFromUser: false,
           sentAt: DateTime(2026, 4, 14, 18, 0),
         ),
@@ -85,7 +85,7 @@ class MockConversation {
         MockChatMessage(
           id: 'msg_6',
           text:
-              'Sua solicitação de viagem foi recebida. '
+              'O seu pedido de viagem foi recebido. '
               'Estamos buscando um motorista.',
           isFromUser: false,
           sentAt: DateTime(2026, 4, 14, 10, 0),
@@ -116,7 +116,7 @@ class MockConversation {
       messages: [
         MockChatMessage(
           id: 'msg_9',
-          text: 'Sua viagem foi concluída! Obrigado por viajar com a KZ.',
+          text: 'A sua viagem foi concluída! Obrigado por viajar connosco.',
           isFromUser: false,
           sentAt: DateTime(2026, 4, 10, 19, 0),
         ),

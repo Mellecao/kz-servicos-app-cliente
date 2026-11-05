@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kz_servicos_app/core/constants/app_brand.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -28,9 +29,9 @@ class _ChatPageState extends State<ChatPage> {
   String? _tripDetails;
 
   static const _presetMessages = [
-    'Estou chegando',
-    'Vou me atrasar',
-    'Pode confirmar o endereço?',
+    'Estou a chegar',
+    'Vou atrasar-me',
+    'Pode confirmar a morada?',
     'Obrigado(a)!',
   ];
 
@@ -59,10 +60,15 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final room = await _supabase
           .from('chat_rooms')
-          .select('trip_id')
+          .select('trip_id, service_request_id')
           .eq('id', widget.conversationId)
           .maybeSingle();
       final tripId = room?['trip_id'] as String?;
+      if ((tripId == null || tripId.isEmpty) &&
+          room?['service_request_id'] != null) {
+        if (mounted) setState(() => _chatTitle = 'Chat do serviço');
+        return;
+      }
       if (tripId == null || tripId.isEmpty) return;
 
       final trip = await _supabase
@@ -80,7 +86,7 @@ class _ChatPageState extends State<ChatPage> {
       if (!mounted) return;
       setState(() {
         _tripId = tripId;
-        _chatTitle = 'Chat da corrida';
+        _chatTitle = 'Chat da viagem';
         _tripDetails = '$pickup → $dropoff';
       });
     } catch (_) {}
@@ -122,7 +128,7 @@ class _ChatPageState extends State<ChatPage> {
   void _handleRemoteCancellation() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Esta corrida foi cancelada pela KZ.')),
+      SnackBar(content: Text('Esta viagem foi cancelada pela ${AppBrand.name}.')),
     );
     context.go('/trip');
   }
@@ -330,7 +336,7 @@ class _ChatPageState extends State<ChatPage> {
               controller: _messageController,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                hintText: 'Digite uma mensagem...',
+                hintText: 'Escreva uma mensagem...',
                 hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),

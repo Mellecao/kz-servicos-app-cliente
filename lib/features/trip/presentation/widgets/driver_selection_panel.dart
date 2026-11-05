@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/utils/kz_format.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/driver_candidate.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -132,7 +133,7 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Buscando motoristas...',
+              'À procura de motoristas...',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
@@ -188,7 +189,7 @@ class _DriverSelectionPanelState extends State<DriverSelectionPanel> {
                       ),
                       SizedBox(height: 2),
                       Text(
-                        'Escolha seu motorista',
+                        'Escolha o seu motorista',
                         style: TextStyle(
                           fontFamily: 'OutfitBlack',
                           fontSize: 23,
@@ -359,7 +360,7 @@ class _DriverCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final price = candidate.offeredPrice == null
         ? 'Valor a combinar'
-        : 'R\$ ${candidate.offeredPrice!.toStringAsFixed(2).replaceAll('.', ',')}';
+        : formatKz(candidate.offeredPrice!);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
@@ -530,7 +531,7 @@ class _PriceBadge extends StatelessWidget {
         ),
       ),
       child: Text(
-        'R\$ ${price.toStringAsFixed(2)}',
+        formatKz(price),
         style: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w800,
@@ -1022,7 +1023,7 @@ class _DriverProfileSheet extends StatelessWidget {
               onPressed: onAccept,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.highlight,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

@@ -11,9 +11,9 @@ class PassengerDetailsPanel extends StatefulWidget {
   final PassengerFormData? initialData;
   final bool isRoundTrip;
   final String? legLabel;
-  /// Quando false, remove o chip "Agora" (horário imediato) — reservado
-  /// para corridas Flash. Fluxos agendados (Cotação, Escolha seu Motorista)
-  /// devem forçar o cliente a escolher um horário futuro explícito.
+
+  /// Quando false, remove o chip "Agora". Corridas imediatas mantêm o chip;
+  /// fluxos agendados devem exigir um horário futuro explícito.
   final bool allowImmediate;
 
   const PassengerDetailsPanel({
@@ -45,7 +45,6 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   DateTime? _pickupDate;
   bool _isNow = true;
   bool _isToday = true;
-  String _paymentMethod = 'pix';
 
   @override
   void didChangeDependencies() {
@@ -76,7 +75,6 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
     _hasLuggage = data.hasLuggage;
     _luggageController.text = data.luggageDescription ?? '';
     _observationController.text = data.observations ?? '';
-    _paymentMethod = data.paymentMethod;
 
     final scheduled = data.scheduledDatetime;
     final now = DateTime.now();
@@ -87,7 +85,6 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
     _pickupDate = scheduled;
     _isNow = false;
     _pickupTime = TimeOfDay(hour: scheduled.hour, minute: scheduled.minute);
-
   }
 
   @override
@@ -142,14 +139,14 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.sheetSurface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(28),
             topRight: Radius.circular(28),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
+              color: Colors.black.withValues(alpha: 0.32),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -170,10 +167,10 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.calendar_today_rounded,
                 size: 18,
-                color: Colors.grey[600],
+                color: AppColors.sheetTextSecondary,
               ),
               const SizedBox(width: 6),
               Text(
@@ -181,14 +178,14 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: AppColors.sheetTextPrimary,
                 ),
               ),
               const SizedBox(width: 16),
-              Icon(
+              const Icon(
                 Icons.access_time_rounded,
                 size: 18,
-                color: Colors.grey[600],
+                color: AppColors.sheetTextSecondary,
               ),
               const SizedBox(width: 6),
               Text(
@@ -196,25 +193,29 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: AppColors.sheetTextPrimary,
                 ),
               ),
               const SizedBox(width: 16),
-              Icon(Icons.person_rounded, size: 18, color: Colors.grey[600]),
+              const Icon(
+                Icons.person_rounded,
+                size: 18,
+                color: AppColors.sheetTextSecondary,
+              ),
               const SizedBox(width: 6),
               Text(
                 '$_adults',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: AppColors.sheetTextPrimary,
                 ),
               ),
               const Spacer(),
-              Icon(
+              const Icon(
                 Icons.keyboard_arrow_up_rounded,
                 size: 24,
-                color: Colors.grey[400],
+                color: AppColors.sheetTextSecondary,
               ),
             ],
           ),
@@ -270,10 +271,6 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
                   ),
                 ],
                 const SizedBox(height: 20),
-                _buildSectionTitle('Forma de pagamento'),
-                const SizedBox(height: 12),
-                _buildPaymentMethod(),
-                const SizedBox(height: 20),
                 _buildSectionTitle('Observação'),
                 const SizedBox(height: 12),
                 _buildDescriptionField(
@@ -287,7 +284,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 112),
           child: _buildConfirmButton(),
         ),
       ],
@@ -301,7 +298,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
         width: 40,
         height: 4,
         decoration: BoxDecoration(
-          color: Colors.grey[300],
+          color: AppColors.sheetTextSecondary,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -321,7 +318,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Colors.black87,
+            color: AppColors.sheetTextPrimary,
           ),
         ),
       ),
@@ -334,7 +331,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
       style: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: Colors.black87,
+        color: AppColors.sheetTextPrimary,
       ),
     );
   }
@@ -342,7 +339,10 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   Widget _buildAdultsSelector() {
     return Row(
       children: [
-        const Text('Adultos', style: TextStyle(fontSize: 14)),
+        const Text(
+          'Adultos',
+          style: TextStyle(fontSize: 14, color: AppColors.sheetTextPrimary),
+        ),
         const Spacer(),
         QuantitySelector(
           value: _adults,
@@ -351,54 +351,6 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
           onChanged: (v) => setState(() => _adults = v),
         ),
       ],
-    );
-  }
-
-  Widget _buildPaymentMethod() {
-    const methods = [
-      ('pix', 'PIX'),
-      ('debit', 'Débito'),
-      ('credit', 'Crédito'),
-      ('cash', 'Dinheiro'),
-      ('billing', 'Faturamento'),
-    ];
-
-    return SizedBox(
-      height: 40,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: methods.map((entry) {
-          final (value, label) = entry;
-          final selected = _paymentMethod == value;
-          return GestureDetector(
-            onTap: () => setState(() => _paymentMethod = value),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.highlight
-                    : AppColors.highlight.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: selected
-                      ? AppColors.highlight
-                      : AppColors.highlight.withValues(alpha: 0.25),
-                ),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'QuasimodoSemiBold',
-                  fontSize: 13,
-                  color: selected ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
     );
   }
 
@@ -435,14 +387,20 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   }) {
     return Row(
       children: [
-        Text(label, style: const TextStyle(fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.sheetTextPrimary,
+          ),
+        ),
         const Spacer(),
         Switch(
           value: value,
           activeThumbColor: AppColors.highlight,
           activeTrackColor: AppColors.highlight.withValues(alpha: 0.4),
-          inactiveThumbColor: Colors.grey.shade400,
-          inactiveTrackColor: Colors.grey.shade300,
+          inactiveThumbColor: AppColors.sheetTextSecondary,
+          inactiveTrackColor: AppColors.sheetBackground,
           onChanged: onChanged,
         ),
       ],
@@ -456,21 +414,21 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   }) {
     return TextField(
       controller: controller,
-      style: const TextStyle(fontSize: 14),
+      style: const TextStyle(fontSize: 14, color: AppColors.sheetTextPrimary),
       maxLines: maxLines,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(
+        hintStyle: const TextStyle(
           fontSize: 13,
-          color: Colors.black.withValues(alpha: 0.3),
+          color: AppColors.sheetTextSecondary,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: AppColors.sheetTextSecondary),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: AppColors.sheetTextSecondary),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -488,7 +446,10 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   Widget _buildTimeSelector() {
     return Row(
       children: [
-        const Text('Horário de embarque', style: TextStyle(fontSize: 14)),
+        const Text(
+          'Horário de embarque',
+          style: TextStyle(fontSize: 14, color: AppColors.sheetTextPrimary),
+        ),
         const Spacer(),
         if (widget.allowImmediate) ...[
           _buildChip(
@@ -523,7 +484,10 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
   Widget _buildDateSelector() {
     return Row(
       children: [
-        const Text('Data de embarque', style: TextStyle(fontSize: 14)),
+        const Text(
+          'Data de embarque',
+          style: TextStyle(fontSize: 14, color: AppColors.sheetTextPrimary),
+        ),
         const Spacer(),
         _buildChip(
           label: 'Hoje',
@@ -565,7 +529,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.highlight : Colors.grey.shade100,
+          color: selected ? AppColors.highlight : AppColors.sheetBackground,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -573,7 +537,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? Colors.white : Colors.black54,
+            color: selected ? Colors.black : AppColors.sheetTextSecondary,
           ),
         ),
       ),
@@ -603,7 +567,6 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
         observations: _observationController.text.trim().isEmpty
             ? null
             : _observationController.text.trim(),
-        paymentMethod: _paymentMethod,
         isRoundTrip: widget.isRoundTrip,
         returnDatetime: null,
       ),
@@ -618,8 +581,8 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
         onPressed: _isValid ? _handleConfirm : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.highlight,
-          disabledBackgroundColor: Colors.grey.shade300,
-          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.sheetBackground,
+          foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -627,7 +590,7 @@ class PassengerDetailsPanelState extends State<PassengerDetailsPanel> {
         ),
         child: const Text(
           'Continuar',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
     );

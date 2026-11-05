@@ -26,5 +26,5 @@ class SignInWithEmail {
 
 class NotClientException implements Exception {
   @override
-  String toString() => 'Este aplicativo é exclusivo para clientes';
+  String toString() => 'Esta aplicação é exclusiva para clientes';
 }

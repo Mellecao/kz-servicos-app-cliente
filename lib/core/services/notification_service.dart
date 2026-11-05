@@ -16,7 +16,7 @@ class NotificationService {
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
   static const _channelId = 'kz_trip_channel';
-  static const _channelName = 'Viagens KZ';
+  static const _channelName = 'Viagens';
 
   Future<void> initialize({
     required SupabaseClient client,
@@ -115,7 +115,7 @@ abstract final class _NotificationHelper {
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'kz_trip_channel',
-          'Viagens KZ',
+          'Viagens',
           channelDescription: 'Atualizações de viagens e serviços',
           importance: Importance.high,
           priority: Priority.high,
@@ -134,7 +134,7 @@ abstract final class _NotificationHelper {
     final type = data['type'] as String? ?? '';
     return switch (type) {
       'trip_under_review' => 'Solicitação recebida',
-      'searching_drivers' => 'Buscando motoristas',
+      'searching_drivers' => 'À procura de motoristas',
       'awaiting_confirmation' => 'Motorista encontrado!',
       'trip_scheduled' => 'Viagem confirmada!',
       'trip_started' => 'Viagem iniciada!',
@@ -152,18 +152,18 @@ abstract final class _NotificationHelper {
   static String? _bodyFromData(Map<String, dynamic> data) {
     final type = data['type'] as String? ?? '';
     return switch (type) {
-      'trip_under_review' => 'Sua viagem está em análise pela equipe KZ.',
-      'searching_drivers' => 'Estamos procurando motoristas disponíveis.',
+      'trip_under_review' => 'A sua viagem está em análise pela equipa.',
+      'searching_drivers' => 'Estamos à procura de motoristas disponíveis.',
       'awaiting_confirmation' => 'Um motorista aceitou. Confirme a viagem no app.',
-      'trip_scheduled' => 'Sua viagem está confirmada.',
-      'trip_started' => 'Seu motorista iniciou a viagem.',
-      'trip_finished' => 'Sua viagem foi concluída. Avalie sua experiência!',
-      'trip_cancelled' => 'Sua viagem foi cancelada.',
-      'trip_rejected' => 'Sua solicitação de viagem foi recusada.',
+      'trip_scheduled' => 'A sua viagem está confirmada.',
+      'trip_started' => 'O seu motorista iniciou a viagem.',
+      'trip_finished' => 'A sua viagem foi concluída. Avalie a sua experiência!',
+      'trip_cancelled' => 'A sua viagem foi cancelada.',
+      'trip_rejected' => 'O seu pedido de viagem foi recusado.',
       'service_assigned' => 'Um prestador foi atribuído ao seu serviço.',
-      'service_started' => 'Seu prestador iniciou o serviço.',
-      'service_finished' => 'Seu serviço foi concluído com sucesso.',
-      'service_cancelled' => 'Seu serviço foi cancelado.',
+      'service_started' => 'O seu prestador iniciou o serviço.',
+      'service_finished' => 'O seu serviço foi concluído com sucesso.',
+      'service_cancelled' => 'O seu serviço foi cancelado.',
       _ => data['body'] as String?,
     };
   }

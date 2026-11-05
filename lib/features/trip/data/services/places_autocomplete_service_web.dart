@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:kz_servicos_app/core/constants/app_maps.dart';
 import 'package:kz_servicos_app/features/trip/data/models/place_prediction.dart';
 import 'package:kz_servicos_app/features/trip/data/services/google_maps_js_types.dart';
 
@@ -17,8 +18,9 @@ class PlacesAutocompleteService {
 
     final params = <String, Object>{
       'input': input,
-      'includedRegionCodes': ['br'],
-      'language': 'pt-BR',
+      'includedRegionCodes': [AppMaps.regionCode],
+      'language': AppMaps.languageCode,
+      'region': AppMaps.regionCode,
     };
 
     if (location != null) {

@@ -1,5 +1,5 @@
 import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
-import 'package:kz_servicos_app/core/utils/brazil_time.dart';
+import 'package:kz_servicos_app/core/utils/angola_time.dart';
 
 class ScheduledTripModel {
   const ScheduledTripModel({
@@ -45,7 +45,7 @@ class ScheduledTripModel {
       id: json['id'] as String,
       status: json['status'] as String? ?? 'open',
       scheduledDatetime:
-          BrazilTime.fromBackend(json['scheduled_datetime'] as String),
+          AngolaTime.fromBackend(json['scheduled_datetime'] as String),
       origin: _buildShortAddress(pickup),
       destination: _buildShortAddress(dropoff),
       originLat: _toDouble(pickup?['latitude']),
@@ -59,7 +59,7 @@ class ScheduledTripModel {
   }
 
   static String _buildShortAddress(Map<String, dynamic>? addr) {
-    if (addr == null) return 'Endereço desconhecido';
+    if (addr == null) return 'Morada desconhecido';
 
     final street = addr['street'] as String?;
     final number = addr['number'] as String?;
@@ -74,7 +74,7 @@ class ScheduledTripModel {
     if (street != null) return street;
 
     return addr['formatted_address'] as String? ??
-        'Endereço desconhecido';
+        'Morada desconhecido';
   }
 
   static double _toDouble(dynamic value) {

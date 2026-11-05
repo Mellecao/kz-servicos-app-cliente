@@ -284,7 +284,7 @@ class _SearchHero extends StatelessWidget {
             ),
           ),
           Text(
-            'Aguardando $driverName',
+            'A aguardar $driverName',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
@@ -305,7 +305,7 @@ class _SearchHero extends StatelessWidget {
               SizedBox(width: 7),
               Flexible(
                 child: Text(
-                  'Procurando resposta em tempo real',
+                  'A aguardar resposta em tempo real',
                   style: TextStyle(
                     color: Color(0xFFC9C5BC),
                     fontSize: 12.5,
@@ -317,7 +317,7 @@ class _SearchHero extends StatelessWidget {
           ),
           const SizedBox(height: 13),
           const Text(
-            'Você receberá uma notificação assim que o motorista responder. Pode continuar usando o aplicativo normalmente.',
+            'Receberá uma notificação assim que o motorista responder. Pode continuar a usar a aplicação normalmente.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF9F9B92),
@@ -348,19 +348,24 @@ class _RadarAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
-          colors: [AppColors.highlight, Color(0xFFFF8C18)],
+          colors: [AppColors.highlight, AppColors.primaryDark],
         ),
-        boxShadow: const [BoxShadow(color: Color(0x70FEBF22), blurRadius: 22)],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.highlight.withValues(alpha: .44),
+            blurRadius: 22,
+          ),
+        ],
       ),
       child: CircleAvatar(
-        backgroundColor: const Color(0xFFFFE4A3),
+        backgroundColor: AppColors.highlightSoft,
         backgroundImage: image,
         onBackgroundImageError: image == null ? null : (error, stackTrace) {},
         child: image == null
             ? Text(
                 name.isEmpty ? '?' : name[0].toUpperCase(),
                 style: const TextStyle(
-                  color: Color(0xFF5F4500),
+                  color: AppColors.onPrimary,
                   fontFamily: 'OutfitBlack',
                   fontSize: 29,
                 ),
@@ -396,11 +401,11 @@ class _RadarPainter extends CustomPainter {
       ..shader = SweepGradient(
         startAngle: 0,
         endAngle: math.pi * 2,
-        colors: const [
-          Color(0x00FEBF22),
-          Color(0x12FEBF22),
-          Color(0x70FEBF22),
-          Color(0x00FEBF22),
+        colors: [
+          AppColors.highlight.withValues(alpha: 0),
+          AppColors.highlight.withValues(alpha: .07),
+          AppColors.highlight.withValues(alpha: .44),
+          AppColors.highlight.withValues(alpha: 0),
         ],
         transform: GradientRotation(progress * math.pi * 2),
       ).createShader(Rect.fromCircle(center: center, radius: maxRadius));
@@ -562,7 +567,7 @@ class _TripSummary extends StatelessWidget {
         children: [
           const _CardTitle(
             icon: Icons.route_rounded,
-            title: 'Resumo da corrida',
+            title: 'Resumo da viagem',
           ),
           const SizedBox(height: 17),
           _RouteLine(
@@ -733,7 +738,7 @@ class _WhatHappensNext extends StatelessWidget {
             icon: Icons.check_rounded,
             color: Color(0xFF21A45B),
             title: 'Solicitação entregue',
-            subtitle: 'O motorista já recebeu os detalhes da corrida.',
+            subtitle: 'O motorista já recebeu os detalhes da viagem.',
             done: true,
           ),
           Container(
@@ -745,7 +750,7 @@ class _WhatHappensNext extends StatelessWidget {
           const _StatusItem(
             icon: Icons.hourglass_top_rounded,
             color: AppColors.highlight,
-            title: 'Aguardando análise',
+            title: 'A aguardar análise',
             subtitle: 'Ele pode aceitar ou enviar uma proposta de valor.',
             done: false,
           ),
@@ -759,7 +764,7 @@ class _WhatHappensNext extends StatelessWidget {
             icon: Icons.notifications_active_rounded,
             color: Color(0xFF8A857C),
             title: 'Resposta instantânea',
-            subtitle: 'Avisaremos você imediatamente pelo app.',
+            subtitle: 'Avisamos imediatamente pela app.',
             done: false,
           ),
         ],
@@ -952,7 +957,7 @@ class _BottomActions extends StatelessWidget {
               onPressed: onContinue,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.highlight,
-                foregroundColor: const Color(0xFF28220F),
+                foregroundColor: AppColors.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),

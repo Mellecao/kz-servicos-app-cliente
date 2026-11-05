@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/utils/kz_format.dart';
 import 'package:kz_servicos_app/features/profile/data/models/mock_trip_history.dart';
 
 class TripHistoryCard extends StatelessWidget {
   final MockTripHistory trip;
   final VoidCallback? onTap;
 
-  const TripHistoryCard({
-    super.key,
-    required this.trip,
-    this.onTap,
-  });
+  const TripHistoryCard({super.key, required this.trip, this.onTap});
 
   static const _monthAbbreviations = [
-    'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-    'jul', 'ago', 'set', 'out', 'nov', 'dez',
+    'jan',
+    'fev',
+    'mar',
+    'abr',
+    'mai',
+    'jun',
+    'jul',
+    'ago',
+    'set',
+    'out',
+    'nov',
+    'dez',
   ];
 
   String _formatDate(DateTime date) {
@@ -26,7 +33,7 @@ class TripHistoryCard extends StatelessWidget {
   }
 
   String _formatPrice(double price) {
-    return 'R\$ ${price.toStringAsFixed(2).replaceAll('.', ',')}';
+    return formatKz(price);
   }
 
   @override
@@ -35,7 +42,7 @@ class TripHistoryCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.sheetSurface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
@@ -74,9 +81,7 @@ class _MiniMapPreview extends StatelessWidget {
       child: SizedBox(
         height: 140,
         width: double.infinity,
-        child: CustomPaint(
-          painter: const _RoutePainter(),
-        ),
+        child: CustomPaint(painter: const _RoutePainter()),
       ),
     );
   }
@@ -168,10 +173,7 @@ class _RouteRow extends StatelessWidget {
   final String origin;
   final String destination;
 
-  const _RouteRow({
-    required this.origin,
-    required this.destination,
-  });
+  const _RouteRow({required this.origin, required this.destination});
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +194,7 @@ class _RouteRow extends StatelessWidget {
             style: const TextStyle(
               fontFamily: 'QuasimodoSemiBold',
               fontSize: 13,
-              color: AppColors.textPrimary,
+              color: AppColors.sheetTextPrimary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -200,11 +202,7 @@ class _RouteRow extends StatelessWidget {
         ),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 6),
-          child: Icon(
-            Icons.arrow_forward,
-            size: 14,
-            color: Color(0xFF9E9E9E),
-          ),
+          child: Icon(Icons.arrow_forward, size: 14, color: Color(0xFF9E9E9E)),
         ),
         Expanded(
           child: Row(
@@ -224,7 +222,7 @@ class _RouteRow extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'QuasimodoSemiBold',
                     fontSize: 13,
-                    color: AppColors.textPrimary,
+                    color: AppColors.sheetTextPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -273,22 +271,18 @@ class _InfoRow extends StatelessWidget {
           style: const TextStyle(
             fontFamily: 'OutfitBlack',
             fontSize: 14,
-            color: AppColors.textPrimary,
+            color: AppColors.sheetTextPrimary,
           ),
         ),
         const SizedBox(width: 8),
-        const Icon(
-          Icons.star,
-          size: 14,
-          color: AppColors.highlight,
-        ),
+        const Icon(Icons.star, size: 14, color: AppColors.highlight),
         const SizedBox(width: 2),
         Text(
           rating.toStringAsFixed(1),
           style: const TextStyle(
             fontFamily: 'QuasimodoSemiBold',
             fontSize: 12,
-            color: AppColors.textPrimary,
+            color: AppColors.sheetTextPrimary,
           ),
         ),
       ],

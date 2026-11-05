@@ -14,7 +14,7 @@ class TripTypeChoiceSheet extends StatelessWidget {
             ListTile(
               leading: const Text('⚡', style: TextStyle(fontSize: 28)),
               title: const Text('Preciso de uma viagem agora'),
-              subtitle: const Text('Corrida Flash — motoristas próximos'),
+              subtitle: const Text('Viagem Flash — motoristas próximos'),
               onTap: () => Navigator.of(context).pop('flash'),
             ),
             const Divider(),

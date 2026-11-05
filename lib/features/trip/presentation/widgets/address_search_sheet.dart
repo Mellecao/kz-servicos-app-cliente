@@ -60,7 +60,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
   @override
   void initState() {
     super.initState();
-    _pickupController.text = 'Minha localização atual';
+    _pickupController.text = 'A minha localização atual';
     _destinationController.addListener(_onDestinationChanged);
     _pickupController.addListener(_onPickupChanged);
     _destinationFocus.addListener(() {
@@ -154,11 +154,11 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
 
     if (_activeField == 'destination') {
       widget.onDestinationSelected(prediction);
-      // Restore pickup to "Minha localização atual" if it has been left empty
+      // Restore pickup to "A minha localização atual" if it has been left empty
       // (e.g. user tapped the field once but didn't pick anything).
       if (_pickupController.text.trim().isEmpty) {
         _pickupController.removeListener(_onPickupChanged);
-        _pickupController.text = 'Minha localização atual';
+        _pickupController.text = 'A minha localização atual';
         _pickupController.addListener(_onPickupChanged);
         _pickupIsDefault = true;
       }
@@ -167,7 +167,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
         widget.onPickupSelected(
           PlacePrediction(
             placeId: '_current_location_',
-            description: 'Minha localização atual',
+            description: 'A minha localização atual',
             matchedSubstrings: [],
           ),
         );
@@ -270,7 +270,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
           ),
           const Expanded(
             child: Text(
-              'Buscar endereço',
+              'Procurar morada',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 17,
@@ -463,7 +463,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
     widget.onRecentDestinationSelected?.call(dest);
     if (_pickupController.text.trim().isEmpty) {
       _pickupController.removeListener(_onPickupChanged);
-      _pickupController.text = 'Minha localização atual';
+      _pickupController.text = 'A minha localização atual';
       _pickupController.addListener(_onPickupChanged);
       _pickupIsDefault = true;
     }
@@ -471,7 +471,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
       widget.onPickupSelected(
         PlacePrediction(
           placeId: '_current_location_',
-          description: 'Minha localização atual',
+          description: 'A minha localização atual',
           matchedSubstrings: [],
         ),
       );
@@ -499,7 +499,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
                 Expanded(
                   child: _SaveAddressButton(
                     icon: Icons.home_rounded,
-                    label: 'Salvar casa',
+                    label: 'Guardar casa',
                     enabled: hasDestination,
                     onTap: () => widget.onSaveCurrentDestinationAs?.call('home'),
                   ),
@@ -508,7 +508,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
                 Expanded(
                   child: _SaveAddressButton(
                     icon: Icons.work_rounded,
-                    label: 'Salvar trabalho',
+                    label: 'Guardar trabalho',
                     enabled: hasDestination,
                     onTap: () => widget.onSaveCurrentDestinationAs?.call('work'),
                   ),
@@ -695,7 +695,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
             onPressed: _canConfirm ? widget.onConfirmAddresses : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.highlight,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               disabledBackgroundColor: Colors.grey.shade200,
               disabledForegroundColor: Colors.grey.shade400,
               elevation: 0,
@@ -704,7 +704,7 @@ class AddressSearchSheetState extends State<AddressSearchSheet> {
               ),
             ),
             child: const Text(
-              'Confirmar endereços',
+              'Confirmar moradas',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

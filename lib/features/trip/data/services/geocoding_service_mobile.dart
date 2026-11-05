@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:kz_servicos_app/core/constants/app_maps.dart';
 import 'package:kz_servicos_app/core/maps/google_maps_api_key.dart';
 
 class GeocodingService {
@@ -13,7 +14,8 @@ class GeocodingService {
     final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
       'latlng': '${position.latitude},${position.longitude}',
       'key': GoogleMapsApiKey.value,
-      'language': 'pt-BR',
+      'language': AppMaps.languageCode,
+      'region': AppMaps.regionCode,
     });
 
     try {

@@ -19,7 +19,7 @@ class _CancelTripDialogState extends State<CancelTripDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Cancelar corrida?'),
+      title: const Text('Cancelar viagem?'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,7 +50,7 @@ class _CancelTripDialogState extends State<CancelTripDialog> {
             Navigator.of(context).pop(_reasonController.text.trim());
           },
           style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
-          child: const Text('Cancelar corrida'),
+          child: const Text('Cancelar viagem'),
         ),
       ],
     );

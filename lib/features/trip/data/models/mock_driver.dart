@@ -43,7 +43,7 @@ class MockDriver {
       rg: '12.345.678-9',
       birthDate: DateTime(1985, 3, 15),
       extras: ['Wi-Fi', 'Água mineral', 'Carregador USB'],
-      driverNote: 'Consigo ir ao seu encontro daqui 10min somente, pois estou em outra corrida.',
+      driverNote: 'Consigo ir ao seu encontro daqui a 10 min apenas, pois estou noutra viagem.',
     ),
     MockDriver(
       id: 'driver_2',
@@ -54,7 +54,7 @@ class MockDriver {
       licensePlate: 'DEF-4E56',
       rating: 4.9,
       description:
-          'Atenciosa e pontual. Mais de 2.000 corridas realizadas '
+          'Atenciosa e pontual. Mais de 2.000 viagens realizadas '
           'com nota máxima. Experiência com transporte de crianças '
           'e cadeirinha disponível.',
       rg: '98.765.432-1',

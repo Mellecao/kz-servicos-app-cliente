@@ -46,11 +46,11 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
             const SizedBox(height: 4),
             _buildForgotPassword(),
             const SizedBox(height: 24),
-            _buildPrimaryButton('Login'),
+            _buildPrimaryButton('Iniciar sessão'),
             const SizedBox(height: 16),
             _buildDivider(),
             const SizedBox(height: 16),
-            _buildSecondaryButton('Registrar-se'),
+            _buildSecondaryButton('Criar conta'),
           ],
         ),
       ),
@@ -72,7 +72,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
     return Column(
       children: [
         Text(
-          'Login',
+          'Iniciar sessão',
           style: TextStyle(
             fontFamily: AppTheme.fontFamilyTitle,
             fontSize: 26,
@@ -82,7 +82,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Acesse sua conta',
+          'Aceda à sua conta',
           style: TextStyle(
             fontFamily: AppTheme.fontFamilyBody,
             fontSize: 15,
@@ -108,7 +108,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
       obscureText: _obscurePassword,
       style: _fieldTextStyle(),
       decoration: _inputDecoration(
-        hint: 'Senha',
+        hint: 'Palavra-passe',
         icon: Icons.lock_outline,
         suffixIcon: IconButton(
           icon: Icon(
@@ -135,7 +135,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: Text(
-          'Esqueci minha senha',
+          'Esqueci-me da palavra-passe',
           style: TextStyle(
             fontFamily: AppTheme.fontFamilyBody,
             fontSize: 14,
@@ -155,7 +155,7 @@ class _LoginBottomSheetState extends State<LoginBottomSheet> {
         onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.highlight,
-          foregroundColor: const Color(0xFF1A1A1A),
+          foregroundColor: AppColors.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

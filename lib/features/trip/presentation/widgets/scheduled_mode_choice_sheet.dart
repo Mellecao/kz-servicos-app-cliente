@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/config/akira_whatsapp.dart';
+import '../../../../core/config/support_contact.dart';
 import '../../domain/entities/quotation_availability.dart';
 
 class ScheduledModeChoiceSheet extends StatelessWidget {
@@ -9,8 +9,8 @@ class ScheduledModeChoiceSheet extends StatelessWidget {
 
   final QuotationAvailability availability;
 
-  Future<void> _openAkira() async {
-    final uri = Uri.parse('https://wa.me/$akiraWhatsappE164');
+  Future<void> _openSupport() async {
+    final uri = Uri.parse('https://wa.me/$supportWhatsappE164');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -36,7 +36,7 @@ class ScheduledModeChoiceSheet extends StatelessWidget {
               ),
               subtitle: Text(
                 quotationAvailable
-                    ? 'A KZ busca o melhor motorista e preço para você'
+                    ? 'A nossa equipa procura o melhor motorista e preço para si'
                     : 'Disponível das 07h às 20h',
               ),
               onTap: quotationAvailable
@@ -46,14 +46,14 @@ class ScheduledModeChoiceSheet extends StatelessWidget {
             const Divider(),
             ListTile(
               leading: const Text('👤', style: TextStyle(fontSize: 28)),
-              title: const Text('Escolha seu motorista'),
+              title: const Text('Escolha o seu motorista'),
               subtitle: const Text('Selecione um motorista aprovado da sua confiança'),
               onTap: () => Navigator.of(context).pop('scheduled_choose_driver'),
             ),
             const SizedBox(height: 12),
-            _AkiraButton(
+            _SupportButton(
               highlighted: !quotationAvailable,
-              onPressed: _openAkira,
+              onPressed: _openSupport,
             ),
           ],
         ),
@@ -62,8 +62,8 @@ class ScheduledModeChoiceSheet extends StatelessWidget {
   }
 }
 
-class _AkiraButton extends StatelessWidget {
-  const _AkiraButton({required this.highlighted, required this.onPressed});
+class _SupportButton extends StatelessWidget {
+  const _SupportButton({required this.highlighted, required this.onPressed});
 
   final bool highlighted;
   final VoidCallback onPressed;
@@ -76,14 +76,14 @@ class _AkiraButton extends StatelessWidget {
         child: FilledButton.icon(
           onPressed: onPressed,
           icon: const Text('💬', style: TextStyle(fontSize: 20)),
-          label: const Text('Falar com o Akira'),
+          label: const Text('Falar com o suporte'),
         ),
       );
     }
     return TextButton.icon(
       onPressed: onPressed,
       icon: const Text('💬'),
-      label: const Text('Falar com o Akira'),
+      label: const Text('Falar com o suporte'),
     );
   }
 }

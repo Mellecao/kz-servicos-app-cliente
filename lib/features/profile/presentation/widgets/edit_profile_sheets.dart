@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
 export 'package:kz_servicos_app/features/profile/presentation/widgets/change_password_sheet.dart';
@@ -12,6 +13,7 @@ Future<void> showEditFieldSheet(
   required String initialValue,
   required Future<String?> Function(String value) onSave,
   TextInputType keyboardType = TextInputType.text,
+  List<TextInputFormatter>? inputFormatters,
 }) {
   final controller = TextEditingController(text: initialValue);
   String? errorText;
@@ -61,6 +63,7 @@ Future<void> showEditFieldSheet(
               TextField(
                 controller: controller,
                 keyboardType: keyboardType,
+                inputFormatters: inputFormatters,
                 autofocus: true,
                 style: const TextStyle(
                   fontFamily: 'QuasimodoSemiBold',
@@ -140,7 +143,7 @@ Future<void> showEditFieldSheet(
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.highlight,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.onPrimary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -156,7 +159,7 @@ Future<void> showEditFieldSheet(
                           ),
                         )
                       : const Text(
-                          'Salvar',
+                          'Guardar',
                           style: TextStyle(
                             fontFamily: 'QuasimodoSemiBold',
                             fontSize: 16,

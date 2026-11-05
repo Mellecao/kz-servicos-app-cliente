@@ -24,7 +24,17 @@ class ScheduledTripsCubit extends Cubit<ScheduledTripsState> {
     _subscribeRealtime(clientId);
   }
 
+  /// O realtime é um extra: se não houver cliente Supabase (testes) ou o canal
+  /// falhar, a lista continua a funcionar com recarga manual.
   void _subscribeRealtime(String clientId) {
+    try {
+      _doSubscribe(clientId);
+    } catch (_) {
+      _channel = null;
+    }
+  }
+
+  void _doSubscribe(String clientId) {
     _channel?.unsubscribe();
     _channel = Supabase.instance.client
         .channel('scheduled-trips-$clientId')

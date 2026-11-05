@@ -59,8 +59,8 @@ class _SearchingDriverPanelState extends State<SearchingDriverPanel>
             const SizedBox(width: 20),
             Expanded(
               child: Text(
-                'Estamos procurando um motorista disponível, '
-                'assim que sua corrida for confirmada, '
+                'Estamos à procura de um motorista disponível, '
+                'assim que a sua viagem for confirmada, '
                 'te avisaremos aqui.',
                 style: TextStyle(
                   fontSize: 14,

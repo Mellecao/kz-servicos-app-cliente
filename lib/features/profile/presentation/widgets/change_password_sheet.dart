@@ -48,7 +48,7 @@ Future<void> showChangePasswordSheet(
               ),
               const SizedBox(height: 20),
               const Text(
-                'Alterar Senha',
+                'Alterar palavra-passe',
                 style: TextStyle(
                   fontFamily: 'OutfitBlack',
                   fontSize: 20,
@@ -58,17 +58,17 @@ Future<void> showChangePasswordSheet(
               const SizedBox(height: 20),
               PasswordField(
                 controller: currentPasswordCtrl,
-                label: 'Senha atual',
+                label: 'Palavra-passe atual',
               ),
               const SizedBox(height: 12),
               PasswordField(
                 controller: newPasswordCtrl,
-                label: 'Nova senha',
+                label: 'Nova palavra-passe',
               ),
               const SizedBox(height: 12),
               PasswordField(
                 controller: confirmPasswordCtrl,
-                label: 'Confirmar nova senha',
+                label: 'Confirmar nova palavra-passe',
               ),
               if (errorText != null) ...[
                 const SizedBox(height: 12),
@@ -103,14 +103,14 @@ Future<void> showChangePasswordSheet(
                           if (newPass.length < 6) {
                             setSheetState(() {
                               errorText =
-                                  'A nova senha deve ter pelo menos 6 caracteres';
+                                  'A nova palavra-passe deve ter pelo menos 6 caracteres';
                             });
                             return;
                           }
 
                           if (newPass != confirm) {
                             setSheetState(() {
-                              errorText = 'As senhas não coincidem';
+                              errorText = 'As palavras-passe não coincidem';
                             });
                             return;
                           }
@@ -130,7 +130,7 @@ Future<void> showChangePasswordSheet(
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.highlight,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.onPrimary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -146,7 +146,7 @@ Future<void> showChangePasswordSheet(
                           ),
                         )
                       : const Text(
-                          'Alterar Senha',
+                          'Alterar palavra-passe',
                           style: TextStyle(
                             fontFamily: 'QuasimodoSemiBold',
                             fontSize: 16,

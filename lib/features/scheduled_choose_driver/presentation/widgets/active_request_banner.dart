@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
 class ActiveRequestBanner extends StatelessWidget {
   const ActiveRequestBanner({
@@ -14,7 +15,7 @@ class ActiveRequestBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.amber.shade100,
+      color: AppColors.highlightSoft,
       child: InkWell(
         onTap: () => context.go('/scheduled-choose-driver/awaiting/$tripId'),
         child: Padding(
@@ -25,7 +26,7 @@ class ActiveRequestBanner extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Aguardando resposta de $driverName',
+                  'A aguardar resposta de $driverName',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),

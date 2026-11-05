@@ -75,7 +75,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     return Column(
       children: [
         Text(
-          'Cadastre-se',
+          'Criar conta',
           style: TextStyle(
             fontFamily: AppTheme.fontFamilyTitle,
             fontSize: 26,
@@ -85,7 +85,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Crie sua conta',
+          'Crie a sua conta',
           style: TextStyle(
             fontFamily: AppTheme.fontFamilyBody,
             fontSize: 15,
@@ -132,7 +132,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
       obscureText: _obscurePassword,
       style: _fieldTextStyle(),
       decoration: _inputDecoration(
-        hint: 'Senha',
+        hint: 'Palavra-passe',
         icon: Icons.lock_outline,
         suffixIcon: IconButton(
           icon: Icon(
@@ -156,7 +156,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
         onPressed: () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.highlight,
-          foregroundColor: const Color(0xFF1A1A1A),
+          foregroundColor: AppColors.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -167,7 +167,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
           ),
           elevation: 0,
         ),
-        child: const Text('Registrar-se'),
+        child: const Text('Criar conta'),
       ),
     );
   }

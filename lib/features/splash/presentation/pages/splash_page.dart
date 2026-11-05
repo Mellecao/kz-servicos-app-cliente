@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/widgets/brand_logo.dart';
+import 'package:kz_servicos_app/core/widgets/dark_system_ui.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 
@@ -33,13 +36,10 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F0F0),
-      body: Center(
-        child: Image.asset(
-          'public/assets/LOGO COLORIDA PNG.png',
-          width: 200,
-        ),
+    return const DarkSystemUi(
+      child: Scaffold(
+        backgroundColor: AppColors.brandDark,
+        body: Center(child: BrandLogo(onDark: true, width: 260)),
       ),
     );
   }

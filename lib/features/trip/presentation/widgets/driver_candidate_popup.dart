@@ -353,7 +353,7 @@ class _CandidateTile extends StatelessWidget {
               onPressed: isAnyAccepting ? null : onAccept,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.highlight,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onPrimary,
                 disabledBackgroundColor:
                     AppColors.highlight.withValues(alpha: 0.4),
                 disabledForegroundColor: Colors.white.withValues(alpha: 0.7),

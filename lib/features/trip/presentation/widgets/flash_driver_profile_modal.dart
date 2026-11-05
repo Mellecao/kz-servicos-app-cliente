@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/utils/kz_format.dart';
 import '../../domain/entities/flash_proposal.dart';
 import '../../domain/repositories/flash_trip_repository.dart';
 
@@ -56,11 +58,11 @@ class _FlashDriverProfileModalState extends State<FlashDriverProfileModal> {
         padding: const EdgeInsets.all(16),
         children: [
           Row(children: [
-            const Icon(Icons.star, color: Colors.amber),
+            const Icon(Icons.star, color: AppColors.highlight),
             Text(' ${ratingAvg is num ? ratingAvg.toStringAsFixed(1) : '—'}'
                 ' ($ratingsCount avaliações)'),
             const Spacer(),
-            Text('$finishedTrips corridas'),
+            Text('$finishedTrips viagens'),
           ]),
           const SizedBox(height: 12),
           Text('Veículo: ${widget.proposal.vehicleLabel}'),
@@ -69,7 +71,7 @@ class _FlashDriverProfileModalState extends State<FlashDriverProfileModal> {
           const SizedBox(height: 24),
           Center(
             child: Text(
-              'R\$ ${widget.proposal.offeredPrice.toStringAsFixed(2)}',
+              formatKz(widget.proposal.offeredPrice),
               style: const TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

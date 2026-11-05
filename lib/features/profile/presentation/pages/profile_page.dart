@@ -14,7 +14,6 @@ import 'package:kz_servicos_app/features/profile/presentation/widgets/quick_acti
 import 'package:kz_servicos_app/features/profile/presentation/widgets/settings_list.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_cubit.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/scheduled_trips_state.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -25,7 +24,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _tripHistory = MockTripHistory.samples;
-  final int _selectedNavIndex = 3;
+
   final ImagePicker _imagePicker = ImagePicker();
   String? _avatarPath;
 
@@ -40,26 +39,13 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _onNavTap(int index) {
-    switch (index) {
-      case 0:
-        context.go('/trip');
-      case 1:
-        context.go('/scheduled-trips');
-      case 2:
-        context.go('/services');
-    }
-  }
-
   Future<void> _confirmLogout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
-          'Sair da conta',
+          'Terminar sessão',
           style: TextStyle(
             fontFamily: 'OutfitBlack',
             fontSize: 18,
@@ -82,7 +68,7 @@ class _ProfilePageState extends State<ProfilePage> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
-              'Sair',
+              'Terminar sessão',
               style: TextStyle(color: Color(0xFFD32F2F)),
             ),
           ),
@@ -134,11 +120,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.secondary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.camera_alt_rounded, color: AppColors.secondary),
+                child: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: AppColors.secondary,
+                ),
               ),
               title: const Text(
                 'Câmera',
-                style: TextStyle(fontFamily: 'QuasimodoSemiBold', fontSize: 15, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontFamily: 'QuasimodoSemiBold',
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
@@ -150,11 +143,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.highlight.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.photo_library_rounded, color: AppColors.highlight),
+                child: const Icon(
+                  Icons.photo_library_rounded,
+                  color: AppColors.highlight,
+                ),
               ),
               title: const Text(
                 'Galeria',
-                style: TextStyle(fontFamily: 'QuasimodoSemiBold', fontSize: 15, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontFamily: 'QuasimodoSemiBold',
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
@@ -188,11 +188,13 @@ class _ProfilePageState extends State<ProfilePage> {
       final storagePath = 'users/$userId/avatar.$ext';
       final bytes = await picked.readAsBytes();
 
-      await supabase.storage.from('Profile_Images').uploadBinary(
-        storagePath,
-        bytes,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await supabase.storage
+          .from('Profile_Images')
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
 
       final ts = DateTime.now().millisecondsSinceEpoch;
       final cacheBustedUrl =
@@ -233,7 +235,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final userPhone = user?.phone;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.sheetBackground,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -260,27 +262,24 @@ class _ProfilePageState extends State<ProfilePage> {
                     final stats = profileState is ProfileLoaded
                         ? profileState.stats
                         : null;
-                    return BlocBuilder<ScheduledTripsCubit,
-                        ScheduledTripsState>(
+                    return BlocBuilder<
+                      ScheduledTripsCubit,
+                      ScheduledTripsState
+                    >(
                       builder: (context, tripsState) {
                         final scheduledCount =
                             tripsState is ScheduledTripsLoaded
-                                ? tripsState.trips.length
-                                : 0;
+                            ? tripsState.trips.length
+                            : 0;
                         return QuickActionsGrid(
                           completedTrips: scheduledCount,
                           completedTripsLabel: 'agendadas',
-                          requestedServices:
-                              stats?.requestedServices ?? 0,
+                          requestedServices: stats?.requestedServices ?? 0,
                           unreadMessages: stats?.unreadMessages ?? 0,
-                          onTripsTap: () =>
-                              context.push('/scheduled-trips'),
-                          onMessagesTap: () =>
-                              context.push('/messages'),
-                          onPaymentsTap: () =>
-                              context.push('/wallet'),
-                          onServicesTap: () =>
-                              context.push('/services'),
+                          onTripsTap: () => context.push('/scheduled-trips'),
+                          onMessagesTap: () => context.push('/messages'),
+                          onPaymentsTap: () => context.push('/wallet'),
+                          onServicesTap: () => context.push('/services'),
                         );
                       },
                     );
@@ -297,7 +296,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: TextStyle(
                           fontFamily: 'OutfitBlack',
                           fontSize: 18,
-                          color: AppColors.textPrimary,
+                          color: AppColors.sheetTextPrimary,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -334,7 +333,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Color(0xFFD32F2F),
                       ),
                       label: const Text(
-                        'Sair da conta',
+                        'Terminar sessão',
                         style: TextStyle(
                           fontFamily: 'QuasimodoSemiBold',
                           fontSize: 15,
@@ -344,9 +343,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
-                          side: const BorderSide(
-                            color: Color(0x33D32F2F),
-                          ),
+                          side: const BorderSide(color: Color(0x33D32F2F)),
                         ),
                       ),
                     ),
@@ -354,15 +351,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 32),
               ],
-            ),
-          ),
-          Positioned(
-            bottom: 24,
-            left: 20,
-            right: 20,
-            child: TripBottomNav(
-              selectedIndex: _selectedNavIndex,
-              onItemSelected: _onNavTap,
             ),
           ),
         ],

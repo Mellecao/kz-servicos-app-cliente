@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
-import 'package:kz_servicos_app/core/utils/phone_input_formatter.dart';
+import 'package:kz_servicos_app/core/utils/angola_phone.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 
@@ -129,14 +128,14 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
     String subtitle;
     switch (_mode) {
       case AuthMode.login:
-        title = 'Login';
-        subtitle = 'Acesse sua conta';
+        title = 'Iniciar sessão';
+        subtitle = 'Aceda à sua conta';
       case AuthMode.register:
-        title = 'Cadastre-se';
-        subtitle = 'Crie sua conta';
+        title = 'Criar conta';
+        subtitle = 'Crie a sua conta';
       case AuthMode.forgotPassword:
-        title = 'Recuperar senha';
-        subtitle = 'Informe seu e-mail';
+        title = 'Recuperar palavra-passe';
+        subtitle = 'Indique o seu e-mail';
     }
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 250),
@@ -208,15 +207,13 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
   Widget _buildPhoneField() {
     return TextField(
       controller: _phoneController,
-      keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        PhoneInputFormatter(),
-      ],
+      keyboardType: TextInputType.phone,
+      inputFormatters: [AngolaPhoneInputFormatter()],
       style: _fieldTextStyle(),
       decoration: _inputDecoration(
-        hint: 'Telefone',
+        hint: 'Telemóvel',
         icon: Icons.phone_outlined,
+        prefixLabel: '+244',
       ),
     );
   }
@@ -243,7 +240,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
       obscureText: _obscurePassword,
       style: _fieldTextStyle(),
       decoration: _inputDecoration(
-        hint: 'Senha',
+        hint: 'Palavra-passe',
         icon: Icons.lock_outline,
         suffixIcon: IconButton(
           icon: Icon(
@@ -270,7 +267,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: Text(
-          'Esqueci minha senha',
+          'Esqueci-me da palavra-passe',
           style: TextStyle(
             fontFamily: AppTheme.fontFamilyBody,
             fontSize: 14,
@@ -321,7 +318,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
             onPressed: isLoading ? null : () => _onPrimaryPressed(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.highlight,
-              foregroundColor: const Color(0xFF1A1A1A),
+              foregroundColor: AppColors.onPrimary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -358,10 +355,19 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
       // TODO: implement forgot password
       Navigator.of(context).pop();
     } else {
+      final phone = _phoneController.text.trim();
+      // O telemóvel é opcional, mas se for preenchido tem de ser válido.
+      if (phone.isNotEmpty && !isValidAngolaPhone(phone)) {
+        setState(() {
+          _errorMessage =
+              'Introduza um número de telemóvel válido (9 dígitos).';
+        });
+        return;
+      }
       context.read<AuthCubit>().signUp(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: toE164Angola(phone),
         password: _passwordController.text,
       );
     }
@@ -393,9 +399,9 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
   String _primaryButtonLabel() {
     switch (_mode) {
       case AuthMode.login:
-        return 'Login';
+        return 'Iniciar sessão';
       case AuthMode.register:
-        return 'Registrar-se';
+        return 'Criar conta';
       case AuthMode.forgotPassword:
         return 'Enviar e-mail';
     }
@@ -404,7 +410,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
   String _secondaryButtonLabel() {
     switch (_mode) {
       case AuthMode.login:
-        return 'Registrar-se';
+        return 'Criar conta';
       case AuthMode.register:
         return 'Já tenho conta';
       case AuthMode.forgotPassword:
@@ -444,6 +450,7 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
     required String hint,
     required IconData icon,
     Widget? suffixIcon,
+    String? prefixLabel,
   }) {
     return InputDecoration(
       hintText: hint,
@@ -463,7 +470,18 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
         borderSide: const BorderSide(color: AppColors.highlight, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      prefixIcon: Icon(icon, color: Colors.grey[400], size: 20),
+      prefixIcon: prefixLabel == null
+          ? Icon(icon, color: Colors.grey[400], size: 20)
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(width: 14),
+                Icon(icon, color: Colors.grey[400], size: 20),
+                const SizedBox(width: 8),
+                Text(prefixLabel, style: _fieldTextStyle()),
+                const SizedBox(width: 8),
+              ],
+            ),
       suffixIcon: suffixIcon,
     );
   }

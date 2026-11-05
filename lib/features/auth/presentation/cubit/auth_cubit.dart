@@ -48,7 +48,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
       emit(AuthSuccess(user));
     } on NotClientException {
-      emit(const AuthError('Este aplicativo é exclusivo para clientes'));
+      emit(const AuthError('Esta aplicação é exclusiva para clientes'));
     } on AuthException catch (e) {
       emit(AuthError(_mapAuthError(e.message)));
     } on Exception {
@@ -58,10 +58,10 @@ class AuthCubit extends Cubit<AuthState> {
 
   String _mapAuthError(String message) {
     if (message.contains('Invalid login credentials')) {
-      return 'E-mail ou senha incorretos';
+      return 'E-mail ou palavra-passe incorretos';
     }
     if (message.contains('Email not confirmed')) {
-      return 'E-mail não confirmado. Verifique sua caixa de entrada.';
+      return 'E-mail não confirmado. Verifique a sua caixa de entrada.';
     }
     return 'Erro ao fazer login. Tente novamente.';
   }
@@ -108,7 +108,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
 
     if (password.length < 6) {
-      emit(const AuthError('A senha deve ter pelo menos 6 caracteres'));
+      emit(const AuthError('A palavra-passe deve ter pelo menos 6 caracteres'));
       return;
     }
 
@@ -145,7 +145,7 @@ class AuthCubit extends Cubit<AuthState> {
       return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
     }
     if (message.contains('password')) {
-      return 'Senha muito fraca. Use pelo menos 6 caracteres.';
+      return 'Palavra-passe demasiado fraca. Use pelo menos 6 caracteres.';
     }
     return 'Erro ao criar conta. Tente novamente.';
   }

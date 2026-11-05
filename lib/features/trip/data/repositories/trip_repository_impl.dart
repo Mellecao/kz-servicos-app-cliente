@@ -3,6 +3,8 @@ import 'package:kz_servicos_app/features/trip/data/models/address_model.dart';
 import 'package:kz_servicos_app/features/trip/data/models/driver_candidate_model.dart';
 import 'package:kz_servicos_app/features/trip/data/models/scheduled_trip_model.dart';
 import 'package:kz_servicos_app/features/trip/data/models/trip_model.dart';
+
+import 'package:kz_servicos_app/features/trip/data/repositories/trip_details_persistence.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/scheduled_trip.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip.dart';
 import 'package:kz_servicos_app/features/trip/domain/entities/trip_address.dart';
@@ -11,65 +13,165 @@ import 'package:kz_servicos_app/features/trip/domain/entities/trip_with_candidat
 import 'package:kz_servicos_app/features/trip/domain/repositories/trip_repository.dart';
 
 class TripRepositoryImpl implements TripRepository {
-  TripRepositoryImpl({required SupabaseClient client}) : _client = client;
+  TripRepositoryImpl({
+    required SupabaseClient client,
+    TripDetailsPersistence? detailsPersistence,
+  }) : _client = client,
+       _detailsPersistence =
+           detailsPersistence ??
+           TripDetailsPersistence(
+             insertRows: (table, rows) async {
+               await client.from(table).insert(rows);
+             },
+           );
 
   final SupabaseClient _client;
+  final TripDetailsPersistence _detailsPersistence;
 
   @override
   Future<Trip> createTrip(TripRequest request) async {
-    // 1. Fetch trip service category
-    final serviceCategoryId = await _fetchTripCategoryId();
+    final createdAddressIds = <String>[];
+    String? createdTripId;
+    try {
+      // 1. Fetch trip service category
+      final serviceCategoryId = await _fetchTripCategoryId();
 
-    // 2. Create pickup address
-    final pickupId = await _insertAddress(
-      AddressModel.fromEntity(request.pickupAddress),
-    );
+      // 2. Create pickup address
+      final pickupId = await _insertAddress(
+        AddressModel.fromEntity(request.pickupAddress),
+      );
+      createdAddressIds.add(pickupId);
 
-    // 3. Create dropoff address
-    final dropoffId = await _insertAddress(
-      AddressModel.fromEntity(request.dropoffAddress),
-    );
+      // 3. Create dropoff address
+      final dropoffId = await _insertAddress(
+        AddressModel.fromEntity(request.dropoffAddress),
+      );
+      createdAddressIds.add(dropoffId);
 
-    // 4. Create trip
-    final tripJson = TripModel.buildInsertJson(
-      clientId: request.clientId,
-      serviceCategoryId: serviceCategoryId,
-      pickupAddressId: pickupId,
-      dropoffAddressId: dropoffId,
-      scheduledDatetime: request.scheduledDatetime,
-      passengerCount: request.passengerCount,
-      childrenCount: request.childrenCount,
-      luggageCount: request.luggageCount,
-      observations: request.combinedObservations,
-      paymentMethod: request.paymentMethod,
-      isRoundTrip: request.isRoundTrip,
-      returnDatetime: request.returnDatetime,
-      tripType: request.tripType,
-    );
+      final returnPickupId = request.returnPickupAddress == null
+          ? null
+          : await _insertAddress(
+              AddressModel.fromEntity(request.returnPickupAddress!),
+            );
+      if (returnPickupId != null) createdAddressIds.add(returnPickupId);
+      final returnDropoffId = request.returnDropoffAddress == null
+          ? null
+          : await _insertAddress(
+              AddressModel.fromEntity(request.returnDropoffAddress!),
+            );
 
-    final tripResponse = await _client.from('trips').insert(tripJson).select();
+      if (returnDropoffId != null) createdAddressIds.add(returnDropoffId);
 
-    if (tripResponse.isEmpty) {
-      throw Exception('Failed to create trip: empty response');
+      // 4. Create trip
+      final tripJson = TripModel.buildInsertJson(
+        clientId: request.clientId,
+        serviceCategoryId: serviceCategoryId,
+        pickupAddressId: pickupId,
+        dropoffAddressId: dropoffId,
+        scheduledDatetime: request.scheduledDatetime,
+        passengerCount: request.aggregatePassengerCount,
+        childrenCount: request.aggregateChildrenCount,
+        luggageCount: request.aggregateLuggageCount,
+        observations: request.combinedObservations,
+        paymentMethod: request.paymentMethod,
+        isRoundTrip: request.isRoundTrip,
+        returnDatetime: request.returnDatetime,
+        returnPickupAddressId: returnPickupId,
+        returnDropoffAddressId: returnDropoffId,
+        tripType: request.tripType,
+      );
+
+      final tripResponse = await _client
+          .from('trips')
+          .insert(tripJson)
+          .select();
+
+      if (tripResponse.isEmpty) {
+        throw Exception('Failed to create trip: empty response');
+      }
+
+      final trip = TripModel.fromJson(tripResponse.first).toEntity();
+      createdTripId = trip.id;
+
+      await _detailsPersistence.persist(
+        tripId: trip.id,
+        passengers: request.passengers,
+        luggage: request.luggage,
+      );
+
+      // Outbound stops only. Each stop address is persisted before trip_stops.
+      if (request.stops.isNotEmpty) {
+        for (var index = 0; index < request.stops.length; index++) {
+          await _client.rpc(
+            'insert_trip_stop_address',
+            params: {
+              'p_trip_id': trip.id,
+              'p_stop_order': index + 1,
+              'p_address': AddressModel.fromEntity(
+                request.stops[index],
+              ).toJson(),
+            },
+          );
+        }
+      }
+
+      return trip;
+    } catch (error, stackTrace) {
+      try {
+        if (createdTripId != null) {
+          await _client.rpc(
+            'rollback_failed_trip_creation',
+            params: {'p_trip_id': createdTripId},
+          );
+        } else if (createdAddressIds.isNotEmpty) {
+          await _client
+              .from('addresses')
+              .delete()
+              .inFilter('id', createdAddressIds);
+        }
+      } catch (_) {
+        // Preserve the original write failure; cleanup is best-effort.
+      }
+      Error.throwWithStackTrace(error, stackTrace);
     }
-
-    return TripModel.fromJson(tripResponse.first).toEntity();
   }
 
-  /// Public helper para fluxos que precisam persistir endereços antes de
+  /// Public helper para fluxos que precisam persistir moradas antes de
   /// criar uma trip (Subprojeto 2B — Escolha seu Motorista navega pra
   /// nova tela com os IDs em vez de criar a trip direto).
-  Future<({String pickupAddressId, String dropoffAddressId, String serviceCategoryId})>
-      persistAddressesForDirectRequest({
+  Future<
+    ({
+      String pickupAddressId,
+      String dropoffAddressId,
+      String? returnPickupAddressId,
+      String? returnDropoffAddressId,
+      String serviceCategoryId,
+    })
+  >
+  persistAddressesForDirectRequest({
     required TripAddress pickupAddress,
     required TripAddress dropoffAddress,
+    TripAddress? returnPickupAddress,
+    TripAddress? returnDropoffAddress,
   }) async {
     final categoryId = await _fetchTripCategoryId();
-    final pickupId = await _insertAddress(AddressModel.fromEntity(pickupAddress));
-    final dropoffId = await _insertAddress(AddressModel.fromEntity(dropoffAddress));
+    final pickupId = await _insertAddress(
+      AddressModel.fromEntity(pickupAddress),
+    );
+    final dropoffId = await _insertAddress(
+      AddressModel.fromEntity(dropoffAddress),
+    );
+    final returnPickupId = returnPickupAddress == null
+        ? null
+        : await _insertAddress(AddressModel.fromEntity(returnPickupAddress));
+    final returnDropoffId = returnDropoffAddress == null
+        ? null
+        : await _insertAddress(AddressModel.fromEntity(returnDropoffAddress));
     return (
       pickupAddressId: pickupId,
       dropoffAddressId: dropoffId,
+      returnPickupAddressId: returnPickupId,
+      returnDropoffAddressId: returnDropoffId,
       serviceCategoryId: categoryId,
     );
   }

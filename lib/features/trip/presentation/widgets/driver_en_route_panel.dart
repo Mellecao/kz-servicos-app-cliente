@@ -73,7 +73,7 @@ class DriverEnRoutePanel extends StatelessWidget {
 
   Widget _buildMinimizedContent() {
     final firstName = driver.name.split(' ').first;
-    final statusText = '$firstName está indo até você';
+    final statusText = '$firstName está a caminho';
 
     return Column(
       children: [

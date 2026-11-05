@@ -92,8 +92,8 @@ class _DriverConfirmingPanelState extends State<DriverConfirmingPanel>
             ),
             const SizedBox(height: 16),
             Text(
-              'Aguardando ${widget.driver.name.split(' ').first} '
-              'confirmar sua viagem',
+              'A aguardar ${widget.driver.name.split(' ').first} '
+              'confirmar a sua viagem',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,

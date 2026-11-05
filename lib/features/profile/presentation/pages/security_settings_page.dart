@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/utils/angola_phone.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:kz_servicos_app/features/auth/presentation/cubit/auth_state.dart';
 import 'package:kz_servicos_app/features/profile/presentation/widgets/edit_profile_sheets.dart';
@@ -63,14 +64,17 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                           ),
                           ProfileItem(
                             icon: Icons.phone_rounded,
-                            label: 'Alterar Telefone',
-                            subtitle: user?.phone ?? 'Não informado',
+                            label: 'Alterar telemóvel',
+                            subtitle: (user?.phone ?? '').isEmpty
+                                ? 'Não informado'
+                                : displayAngolaPhone(user?.phone),
                             onTap: () => showEditFieldSheet(
                               context,
-                              title: 'Alterar Telefone',
-                              initialValue: user?.phone ?? '',
-                              onSave: (v) => _updateField('phone', v),
+                              title: 'Alterar telemóvel (+244)',
+                              initialValue: editableAngolaPhone(user?.phone),
+                              onSave: _savePhone,
                               keyboardType: TextInputType.phone,
+                              inputFormatters: [AngolaPhoneInputFormatter()],
                             ),
                           ),
                         ],
@@ -80,8 +84,8 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                         items: [
                           ProfileItem(
                             icon: Icons.lock_rounded,
-                            label: 'Alterar Senha',
-                            subtitle: 'Atualize sua senha de acesso',
+                            label: 'Alterar palavra-passe',
+                            subtitle: 'Atualize a sua palavra-passe de acesso',
                             onTap: () => showChangePasswordSheet(
                               context,
                               onSave: _updatePassword,
@@ -134,9 +138,17 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
     );
   }
 
+  /// Valida o telemóvel angolano e grava-o em E.164 sem espaços (+244…).
+  Future<String?> _savePhone(String value) async {
+    if (!isValidAngolaPhone(value)) {
+      return 'Introduza um número de telemóvel válido (9 dígitos).';
+    }
+    return _updateField('phone', toE164Angola(value));
+  }
+
   Future<String?> _updateField(String field, String value) async {
     final authState = context.read<AuthCubit>().state;
-    if (authState is! AuthSuccess) return 'Usuário não autenticado';
+    if (authState is! AuthSuccess) return 'Utilizador não autenticado';
     final user = authState.user;
 
     try {
@@ -166,13 +178,13 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       );
 
       if (mounted) {
-        _showSuccessSnackBar('Senha alterada com sucesso!');
+        _showSuccessSnackBar('Palavra-passe alterada com sucesso!');
       }
       return null;
     } on AuthException catch (e) {
       return e.message;
     } on Exception catch (e) {
-      return 'Erro ao alterar senha: ${e.toString()}';
+      return 'Erro ao alterar a palavra-passe: ${e.toString()}';
     }
   }
 
@@ -197,7 +209,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
           borderRadius: BorderRadius.circular(20),
         ),
         title: const Text(
-          'Excluir Conta',
+          'Eliminar conta',
           style: TextStyle(
             fontFamily: 'OutfitBlack',
             fontSize: 18,
@@ -205,7 +217,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
           ),
         ),
         content: const Text(
-          'Tem certeza que deseja excluir sua conta? '
+          'Tem a certeza de que pretende eliminar a sua conta? '
           'Esta ação não pode ser desfeita e todos os seus dados serão '
           'permanentemente removidos.',
           style: TextStyle(
@@ -248,7 +260,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
               ),
             ),
             child: const Text(
-              'Excluir',
+              'Eliminar',
               style: TextStyle(
                 fontFamily: 'QuasimodoSemiBold',
                 color: Colors.white,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
+import 'package:kz_servicos_app/core/utils/kz_format.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DriverArrivedSheet extends StatefulWidget {
@@ -185,7 +186,7 @@ class _DriverArrivedSheetState extends State<DriverArrivedSheet> {
               _detailRow(
                 Icons.attach_money,
                 'Valor',
-                'R\$ ${widget.offeredPrice!.toStringAsFixed(2)}',
+                formatKz(widget.offeredPrice!),
               ),
             ],
           ],

@@ -16,8 +16,18 @@ class ScheduledTripWidget extends StatelessWidget {
   });
 
   static const _monthAbbreviations = [
-    'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-    'jul', 'ago', 'set', 'out', 'nov', 'dez',
+    'jan',
+    'fev',
+    'mar',
+    'abr',
+    'mai',
+    'jun',
+    'jul',
+    'ago',
+    'set',
+    'out',
+    'nov',
+    'dez',
   ];
 
   String _formatDate(DateTime date) {
@@ -33,7 +43,7 @@ class ScheduledTripWidget extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.sheetSurface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(
@@ -93,11 +103,7 @@ class _StatusBadge extends StatelessWidget {
         const Color(0xFF4CAF50),
         'Agendada',
       ),
-      'open' => (
-        const Color(0xFFFFF3E0),
-        const Color(0xFFFF9800),
-        'Pendente',
-      ),
+      'open' => (const Color(0xFFFFF3E0), const Color(0xFFFF9800), 'Pendente'),
       'under_review' => (
         const Color(0xFFFFF3E0),
         const Color(0xFFFF9800),
@@ -106,23 +112,19 @@ class _StatusBadge extends StatelessWidget {
       'searching_drivers' => (
         const Color(0xFFE3F2FD),
         const Color(0xFF2261FE),
-        'Buscando motorista',
+        'À procura de motorista',
       ),
       'awaiting_client_confirmation' || 'awaiting_driver_confirmation' => (
         const Color(0xFFE3F2FD),
         const Color(0xFF2261FE),
-        'Aguardando confirmação',
+        'A aguardar confirmação',
       ),
       'started' => (
         const Color(0xFFE8F5E9),
         const Color(0xFF4CAF50),
         'Em andamento',
       ),
-      _ => (
-        const Color(0xFFF5F5F5),
-        const Color(0xFF9E9E9E),
-        status,
-      ),
+      _ => (const Color(0xFFF5F5F5), const Color(0xFF9E9E9E), status),
     };
 
     return Container(
@@ -147,10 +149,7 @@ class _RouteIndicator extends StatelessWidget {
   final String origin;
   final String destination;
 
-  const _RouteIndicator({
-    required this.origin,
-    required this.destination,
-  });
+  const _RouteIndicator({required this.origin, required this.destination});
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +193,7 @@ class _RouteIndicator extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: 'QuasimodoSemiBold',
                   fontSize: 13,
-                  color: AppColors.textPrimary,
+                  color: AppColors.sheetTextPrimary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -205,7 +204,7 @@ class _RouteIndicator extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: 'QuasimodoSemiBold',
                   fontSize: 13,
-                  color: AppColors.textPrimary,
+                  color: AppColors.sheetTextPrimary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -234,11 +233,7 @@ class _DashedLinePainter extends CustomPainter {
     var startY = 0.0;
 
     while (startY < size.height) {
-      canvas.drawLine(
-        Offset(0, startY),
-        Offset(0, startY + dashHeight),
-        paint,
-      );
+      canvas.drawLine(Offset(0, startY), Offset(0, startY + dashHeight), paint);
       startY += dashHeight + dashSpace;
     }
   }
@@ -286,29 +281,29 @@ class _BottomRow extends StatelessWidget {
                 ],
               ),
               if (driverName != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.person_rounded,
-                    size: 14,
-                    color: AppColors.textPrimary.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      driverName!,
-                      style: TextStyle(
-                        fontFamily: 'QuasimodoSemiBold',
-                        fontSize: 12,
-                        color: AppColors.textPrimary.withValues(alpha: 0.6),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person_rounded,
+                      size: 14,
+                      color: AppColors.textPrimary.withValues(alpha: 0.6),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        driverName!,
+                        style: TextStyle(
+                          fontFamily: 'QuasimodoSemiBold',
+                          fontSize: 12,
+                          color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ],
           ),

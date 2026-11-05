@@ -111,7 +111,7 @@ class _ConversationTile extends StatelessWidget {
   String get _lastMessagePreview {
     if (conversation.messages.isEmpty) return '';
     final msg = conversation.messages.last;
-    return msg.isFromUser ? 'Você: ${msg.text}' : msg.text;
+    return msg.isFromUser ? 'Eu: ${msg.text}' : msg.text;
   }
 
   String get _timeLabel {
@@ -164,7 +164,7 @@ class _ConversationTile extends StatelessWidget {
                     children: [
                       const Expanded(
                         child: Text(
-                          'KZ Serviços',
+                          'Equipa de suporte',
                           style: TextStyle(
                             fontFamily: 'OutfitBlack',
                             fontSize: 14,

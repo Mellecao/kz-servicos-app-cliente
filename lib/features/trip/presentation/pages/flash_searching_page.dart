@@ -45,7 +45,7 @@ class _FlashSearchingPageState extends State<FlashSearchingPage> {
       },
       builder: (ctx, state) => Scaffold(
         appBar: AppBar(
-          title: const Text('Buscando motoristas'),
+          title: const Text('À procura de motoristas'),
           actions: [
             TextButton(
               onPressed: () => ctx.read<FlashSearchingCubit>().cancelTrip(
@@ -71,7 +71,7 @@ class _FlashSearchingPageState extends State<FlashSearchingPage> {
                   .toList(),
             ),
           FlashSearchingAwaitingDriver(:final driverName) => Center(
-            child: Text('Aguardando $driverName confirmar...'),
+            child: Text('A aguardar que $driverName confirme...'),
           ),
           _ => const Center(
             child: Column(
@@ -79,7 +79,7 @@ class _FlashSearchingPageState extends State<FlashSearchingPage> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text('Buscando motoristas...'),
+                Text('À procura de motoristas...'),
               ],
             ),
           ),
