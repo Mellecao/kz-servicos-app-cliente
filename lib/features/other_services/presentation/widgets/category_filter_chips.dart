@@ -71,7 +71,7 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive
               ? activeColor.withValues(alpha: 0.15)
-              : Colors.white,
+              : AppColors.sheetSurface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isActive ? activeColor : Colors.grey.shade300,
@@ -84,7 +84,7 @@ class _FilterChip extends StatelessWidget {
             fontFamily: AppTheme.fontFamilyBody,
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isActive ? activeColor : AppColors.textPrimary,
+            color: isActive ? activeColor : AppColors.sheetTextPrimary,
           ),
         ),
       ),

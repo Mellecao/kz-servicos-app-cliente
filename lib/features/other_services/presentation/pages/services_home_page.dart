@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/features/products/presentation/widgets/products_entry_card.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_categories_cubit.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_categories_state.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_requests_list_cubit.dart';
@@ -10,7 +11,6 @@ import 'package:kz_servicos_app/features/other_services/presentation/cubit/servi
 import 'package:kz_servicos_app/features/other_services/presentation/widgets/category_filter_chips.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/widgets/new_service_button.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/widgets/request_list_tile.dart';
-import 'package:kz_servicos_app/features/trip/presentation/widgets/trip_bottom_nav.dart';
 
 class ServicesHomePage extends StatefulWidget {
   const ServicesHomePage({super.key});
@@ -29,21 +29,10 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
     context.read<ServiceRequestsListCubit>().load();
   }
 
-  void _onNavItemSelected(int index) {
-    switch (index) {
-      case 0:
-        context.go('/trip');
-      case 1:
-        context.go('/scheduled-trips');
-      case 3:
-        context.go('/profile');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.sheetBackground,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -55,6 +44,7 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
                 NewServiceButton(
                   onTap: () => context.push('/services/new-freeform'),
                 ),
+                const ProductsEntryCard(),
                 const SizedBox(height: 20),
                 BlocBuilder<ServiceCategoriesCubit, ServiceCategoriesState>(
                   builder: (context, catState) {
@@ -71,8 +61,7 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                BlocBuilder<ServiceRequestsListCubit,
-                    ServiceRequestsListState>(
+                BlocBuilder<ServiceRequestsListCubit, ServiceRequestsListState>(
                   builder: (context, state) {
                     if (state is ServiceRequestsListLoading) {
                       return const Padding(
@@ -87,19 +76,18 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
                     if (state is ServiceRequestsListError) {
                       return _ErrorView(
                         message: state.message,
-                        onRetry: () => context
-                            .read<ServiceRequestsListCubit>()
-                            .load(),
+                        onRetry: () =>
+                            context.read<ServiceRequestsListCubit>().load(),
                       );
                     }
                     if (state is ServiceRequestsListLoaded) {
                       final filtered = _selectedCategoryId == null
                           ? state.requests
                           : state.requests
-                              .where(
-                                (r) => r.categoryId == _selectedCategoryId,
-                              )
-                              .toList();
+                                .where(
+                                  (r) => r.categoryId == _selectedCategoryId,
+                                )
+                                .toList();
                       if (filtered.isEmpty) {
                         return const _EmptyState();
                       }
@@ -108,8 +96,7 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
                         physics: const NeverScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                         itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 12),
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final request = filtered[index];
                           return RequestListTile(
@@ -127,15 +114,6 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
                 ),
                 const SizedBox(height: 120),
               ],
-            ),
-          ),
-          Positioned(
-            bottom: 24,
-            left: 20,
-            right: 20,
-            child: TripBottomNav(
-              selectedIndex: 2,
-              onItemSelected: _onNavItemSelected,
             ),
           ),
         ],
@@ -159,7 +137,7 @@ class _Header extends StatelessWidget {
             style: TextStyle(
               fontFamily: AppTheme.fontFamilyTitle,
               fontSize: 22,
-              color: AppColors.textPrimary,
+              color: AppColors.sheetTextPrimary,
               height: 1.3,
             ),
           ),
@@ -183,14 +161,14 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.inbox_outlined,
               size: 56,
-              color: AppColors.textPrimary.withValues(alpha: 0.3),
+              color: AppColors.sheetTextSecondary,
             ),
             const SizedBox(height: 12),
             Text(
               'Nenhum serviço solicitado',
               style: TextStyle(
                 fontSize: 15,
-                color: AppColors.textPrimary.withValues(alpha: 0.5),
+                color: AppColors.sheetTextSecondary,
               ),
             ),
           ],
@@ -219,7 +197,7 @@ class _ErrorView extends StatelessWidget {
             style: TextStyle(
               fontFamily: AppTheme.fontFamilyTitle,
               fontSize: 16,
-              color: AppColors.textPrimary,
+              color: AppColors.sheetTextPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -229,7 +207,7 @@ class _ErrorView extends StatelessWidget {
             label: const Text('Tentar novamente'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.highlight,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
             ),
           ),
         ],

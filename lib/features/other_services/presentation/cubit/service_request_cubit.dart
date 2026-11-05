@@ -20,7 +20,7 @@ class ServiceRequestCubit extends Cubit<ServiceRequestState> {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
-        emit(const ServiceRequestError('Usuário não autenticado'));
+        emit(const ServiceRequestError('Utilizador não autenticado'));
         return;
       }
       final requestId = await _repository.createServiceRequest(

@@ -106,7 +106,7 @@ class _ServiceRequestFreeformPageState
           : _addressController.text.trim(),
       urgency: UrgencyType.now,
       scheduledDate: null,
-      status: ServiceRequestStatus.searchingProvider,
+      status: ServiceRequestStatus.open,
       createdAt: DateTime.now(),
     );
 
@@ -198,12 +198,12 @@ class _ServiceRequestFreeformPageState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _sectionLabel('Qual profissional você precisa?'),
+                        _sectionLabel('De que profissional precisa?'),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _professionController,
                           decoration: _inputDecoration(
-                            'Ex: eletricista, encanador, marceneiro...',
+                            'Ex.: eletricista, canalizador, carpinteiro...',
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty)
                               ? 'Informe o profissional'
@@ -266,7 +266,7 @@ class _ServiceRequestFreeformPageState
                           ),
                         ],
                         const SizedBox(height: 20),
-                        _sectionLabel('Endereço (opcional)'),
+                        _sectionLabel('Morada (opcional)'),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _addressController,
@@ -282,7 +282,7 @@ class _ServiceRequestFreeformPageState
                             onPressed: _handleSubmit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.highlight,
-                              foregroundColor: AppColors.white,
+                              foregroundColor: AppColors.onPrimary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),

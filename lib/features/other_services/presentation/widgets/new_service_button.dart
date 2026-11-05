@@ -18,7 +18,7 @@ class NewServiceButton extends StatelessWidget {
           height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFF5A623), Color(0xFFE8961E)],
+              colors: [AppColors.highlight, AppColors.primaryDark],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -34,7 +34,11 @@ class NewServiceButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.add_circle_outline, color: Colors.white, size: 22),
+              const Icon(
+                Icons.add_circle_outline,
+                color: AppColors.onPrimary,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Text(
                 'Solicitar novo serviço',
@@ -42,7 +46,7 @@ class NewServiceButton extends StatelessWidget {
                   fontFamily: AppTheme.fontFamilyTitle,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.onPrimary,
                 ),
               ),
             ],

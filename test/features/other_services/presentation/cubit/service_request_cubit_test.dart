@@ -30,7 +30,7 @@ void main() {
     details: 'Detalhe do problema',
     mediaPaths: [],
     urgency: UrgencyType.now,
-    status: ServiceRequestStatus.searchingProvider,
+    status: ServiceRequestStatus.open,
     createdAt: DateTime(2026, 4, 19),
   );
 
@@ -67,7 +67,7 @@ void main() {
         when(() => mockRepository.createServiceRequest(
               request: any(named: 'request'),
               clientId: any(named: 'clientId'),
-            )).thenAnswer((_) async {});
+            )).thenAnswer((_) async => 'request-1');
         return cubit;
       },
       act: (cubit) => cubit.submit(testRequest),
@@ -86,7 +86,7 @@ void main() {
       act: (cubit) => cubit.submit(testRequest),
       expect: () => [
         const ServiceRequestSubmitting(),
-        const ServiceRequestError('Usuário não autenticado'),
+        const ServiceRequestError('Utilizador não autenticado'),
       ],
     );
 

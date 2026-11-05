@@ -77,7 +77,7 @@ class _MyRequestsPageState extends State<MyRequestsPage> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.highlight,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -113,7 +113,7 @@ class _MyRequestsPageState extends State<MyRequestsPage> {
                               label: const Text('Tentar novamente'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.highlight,
-                                foregroundColor: Colors.white,
+                                foregroundColor: AppColors.onPrimary,
                               ),
                             ),
                           ],

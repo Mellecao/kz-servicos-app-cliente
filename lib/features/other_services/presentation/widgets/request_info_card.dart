@@ -26,8 +26,8 @@ class RequestInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = ServiceCategory.colorForSlug(request.categoryId ?? '');
-    final categoryIcon = ServiceCategory.iconForSlug(request.categoryId ?? '');
+    final categoryColor = ServiceCategory.colorForSlug(request.categorySlug ?? '');
+    final categoryIcon = ServiceCategory.iconForSlug(request.categorySlug ?? '');
     final displayLabel = request.freeformProfession?.isNotEmpty == true
         ? request.freeformProfession!
         : request.categoryName;

@@ -9,25 +9,28 @@ class RequestStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _configFor(status);
+    final style = styleFor(status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: config.color.withValues(alpha: 0.12),
+        color: style.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(config.icon, size: 14, color: config.color),
+          Icon(style.icon, size: 14, color: style.color),
           const SizedBox(width: 4),
-          Text(
-            config.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: config.color,
+          Flexible(
+            child: Text(
+              status.label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: style.color,
+              ),
             ),
           ),
         ],
@@ -35,40 +38,49 @@ class RequestStatusBadge extends StatelessWidget {
     );
   }
 
-  static _BadgeConfig _configFor(ServiceRequestStatus status) {
+  /// Cor e ícone por estado (partilhado com o ecrã de detalhe).
+  static ({Color color, IconData icon}) styleFor(ServiceRequestStatus status) {
     return switch (status) {
-      ServiceRequestStatus.searchingProvider => const _BadgeConfig(
-          color: Color(0xFFEF6C00),
-          icon: Icons.search,
-          label: 'Buscando profissional',
-        ),
-      ServiceRequestStatus.selectProvider => const _BadgeConfig(
-          color: Color(0xFF1565C0),
-          icon: Icons.person_search,
-          label: 'Selecione o prestador',
-        ),
-      ServiceRequestStatus.awaitingConfirmation => const _BadgeConfig(
-          color: Color(0xFFF9A825),
-          icon: Icons.hourglass_top,
-          label: 'Aguardando confirmação',
-        ),
-      ServiceRequestStatus.scheduled => const _BadgeConfig(
-          color: Color(0xFF2E7D32),
-          icon: Icons.check_circle,
-          label: 'Serviço agendado',
-        ),
+      ServiceRequestStatus.open => (
+        color: const Color(0xFF78909C),
+        icon: Icons.send_rounded,
+      ),
+      ServiceRequestStatus.underReview => (
+        color: const Color(0xFF78909C),
+        icon: Icons.fact_check_outlined,
+      ),
+      ServiceRequestStatus.reviewRejected => (
+        color: const Color(0xFFD32F2F),
+        icon: Icons.block_rounded,
+      ),
+      ServiceRequestStatus.searchingProvider => (
+        color: const Color(0xFFEF6C00),
+        icon: Icons.search,
+      ),
+      ServiceRequestStatus.awaitingClientConfirmation => (
+        color: const Color(0xFF1565C0),
+        icon: Icons.touch_app_outlined,
+      ),
+      ServiceRequestStatus.awaitingProviderConfirmation => (
+        color: const Color(0xFFF9A825),
+        icon: Icons.hourglass_top,
+      ),
+      ServiceRequestStatus.assigned => (
+        color: const Color(0xFF2E7D32),
+        icon: Icons.check_circle,
+      ),
+      ServiceRequestStatus.inProgress => (
+        color: const Color(0xFF1E88E5),
+        icon: Icons.build_circle_outlined,
+      ),
+      ServiceRequestStatus.finished => (
+        color: const Color(0xFF2E7D32),
+        icon: Icons.task_alt_rounded,
+      ),
+      ServiceRequestStatus.cancelled => (
+        color: const Color(0xFFD32F2F),
+        icon: Icons.cancel_outlined,
+      ),
     };
   }
-}
-
-class _BadgeConfig {
-  final Color color;
-  final IconData icon;
-  final String label;
-
-  const _BadgeConfig({
-    required this.color,
-    required this.icon,
-    required this.label,
-  });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kz_servicos_app/core/constants/app_colors.dart';
 
 class RatingStars extends StatelessWidget {
   final double rating;
@@ -12,7 +13,7 @@ class RatingStars extends StatelessWidget {
     this.showNumeric = false,
   });
 
-  static const _starColor = Color(0xFFF9A825);
+  static const _starColor = AppColors.highlight;
 
   @override
   Widget build(BuildContext context) {

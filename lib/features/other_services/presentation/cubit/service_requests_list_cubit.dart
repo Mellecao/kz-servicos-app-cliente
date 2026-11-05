@@ -17,7 +17,7 @@ class ServiceRequestsListCubit extends Cubit<ServiceRequestsListState> {
   Future<void> load() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      emit(const ServiceRequestsListError('Usuário não autenticado'));
+      emit(const ServiceRequestsListError('Utilizador não autenticado'));
       return;
     }
     emit(const ServiceRequestsListLoading());

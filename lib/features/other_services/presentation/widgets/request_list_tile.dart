@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
+import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/features/other_services/data/models/service_category.dart';
 import 'package:kz_servicos_app/features/other_services/data/models/service_request.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/widgets/request_status_badge.dart';
@@ -25,8 +26,10 @@ class RequestListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = ServiceCategory.colorForSlug(request.categoryId ?? '');
-    final categoryIcon = ServiceCategory.iconForSlug(request.categoryId ?? '');
+    final categoryColor = ServiceCategory.colorForSlug(
+      request.categorySlug ?? '',
+    );
+    final categoryIcon = ServiceCategory.iconForSlug(request.categorySlug ?? '');
     final displayLabel = request.freeformProfession?.isNotEmpty == true
         ? request.freeformProfession!
         : request.categoryName;
@@ -38,7 +41,7 @@ class RequestListTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.sheetSurface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: const [
             BoxShadow(
@@ -70,6 +73,7 @@ class RequestListTile extends StatelessWidget {
                       fontFamily: AppTheme.fontFamilyTitle,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
+                      color: AppColors.sheetTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),

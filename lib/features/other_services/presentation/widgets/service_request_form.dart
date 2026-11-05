@@ -122,7 +122,7 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
           : _addressController.text.trim(),
       urgency: _urgency,
       scheduledDate: _scheduledDateTime,
-      status: ServiceRequestStatus.searchingProvider,
+      status: ServiceRequestStatus.open,
       createdAt: DateTime.now(),
     );
 
@@ -234,7 +234,7 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
             ),
           ],
           const SizedBox(height: 20),
-          _buildSectionLabel('Endereço (opcional)'),
+          _buildSectionLabel('Morada (opcional)'),
           const SizedBox(height: 8),
           TextFormField(
             controller: _addressController,
@@ -247,7 +247,7 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
             ),
           ),
           const SizedBox(height: 20),
-          _buildSectionLabel('Quando você precisa?'),
+          _buildSectionLabel('Quando precisa?'),
           const SizedBox(height: 8),
           UrgencySelector(
             onUrgencyChanged: (type) => setState(() => _urgency = type),
@@ -312,7 +312,7 @@ class _ServiceRequestFormState extends State<ServiceRequestForm> {
         onPressed: _handleSubmit,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.highlight,
-          foregroundColor: AppColors.white,
+          foregroundColor: AppColors.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
