@@ -6,15 +6,23 @@ class TripBottomNav extends StatelessWidget {
   final ValueChanged<int> onItemSelected;
   final int scheduledCount;
 
+  /// Com as viagens desligadas (`trips_enabled=false`) o primeiro item é a
+  /// busca de prestadores em vez do táxi.
+  final bool tripsEnabled;
+
   const TripBottomNav({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
     this.scheduledCount = 0,
+    this.tripsEnabled = true,
   });
 
-  static const _items = [
-    (icon: Icons.local_taxi_rounded, label: 'Viagens'),
+  static const _tripsItem = (icon: Icons.local_taxi_rounded, label: 'Viagens');
+  static const _searchItem = (icon: Icons.search_rounded, label: 'Buscar');
+
+  List<({IconData icon, String label})> get _items => [
+    tripsEnabled ? _tripsItem : _searchItem,
     (icon: Icons.calendar_month_rounded, label: 'Agendamentos'),
     (icon: Icons.work_rounded, label: 'Serviços'),
     (icon: Icons.person_rounded, label: 'Perfil'),
@@ -22,6 +30,7 @@ class TripBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items = _items;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
@@ -36,11 +45,11 @@ class TripBottomNav extends StatelessWidget {
         ],
       ),
       child: Row(
-        children: List.generate(_items.length, (i) {
+        children: List.generate(items.length, (i) {
           return Expanded(
             child: _NavItem(
-              icon: _items[i].icon,
-              label: _items[i].label,
+              icon: items[i].icon,
+              label: items[i].label,
               isSelected: selectedIndex == i,
               badgeCount: i == 1 ? scheduledCount : 0,
               onTap: () => onItemSelected(i),

@@ -25,6 +25,9 @@ import 'package:kz_servicos_app/features/products/data/repositories/product_repo
 import 'package:kz_servicos_app/features/products/presentation/cubit/product_orders_cubit.dart';
 import 'package:kz_servicos_app/features/products/presentation/cubit/products_cubit.dart';
 import 'package:kz_servicos_app/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:kz_servicos_app/features/provider_search/data/repositories/provider_search_repository.dart';
+import 'package:kz_servicos_app/features/provider_search/data/repositories/trips_enabled_repository.dart';
+import 'package:kz_servicos_app/features/provider_search/presentation/cubit/trips_enabled_cubit.dart';
 import 'package:kz_servicos_app/features/trip/data/repositories/trip_repository_impl.dart';
 import 'package:kz_servicos_app/features/trip/domain/usecases/create_trip.dart';
 import 'package:kz_servicos_app/features/trip/presentation/cubit/pending_confirmations_cubit.dart';
@@ -110,6 +113,15 @@ class KzServicosApp extends StatelessWidget {
         ),
         RepositoryProvider<ProductRepository>(
           create: (_) => ProductRepositoryImpl(client: supabaseClient),
+        ),
+        RepositoryProvider<ProviderSearchRepository>(
+          create: (_) =>
+              SupabaseProviderSearchRepository(client: supabaseClient),
+        ),
+        BlocProvider(
+          create: (_) => TripsEnabledCubit(
+            repository: SupabaseTripsEnabledRepository(client: supabaseClient),
+          ),
         ),
         BlocProvider(
           create: (context) =>

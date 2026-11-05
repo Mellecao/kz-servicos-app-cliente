@@ -8,12 +8,16 @@ class PersistentAppShell extends StatelessWidget {
     required this.onSelect,
     required this.child,
     this.scheduledCount = 0,
+    this.tripsEnabled = true,
   });
 
   final int currentIndex;
   final ValueChanged<int> onSelect;
   final Widget child;
   final int scheduledCount;
+
+  /// `false` ⇒ o primeiro item do menu é "Buscar" (busca de prestadores).
+  final bool tripsEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +35,7 @@ class PersistentAppShell extends StatelessWidget {
               key: const ValueKey('persistent_bottom_nav'),
               selectedIndex: currentIndex,
               scheduledCount: scheduledCount,
+              tripsEnabled: tripsEnabled,
               onItemSelected: onSelect,
             ),
           ),
