@@ -206,6 +206,8 @@ class _ProviderSearchViewState extends State<_ProviderSearchView> {
             icon: icon,
             anchor: const Offset(0.5, 0.92),
             zIndexInt: 10,
+            // Só abre o modal: sem o salto de câmara para o pin tocado.
+            consumeTapEvents: true,
             onTap: () => _openProvider(provider, results.category),
           ),
         };
@@ -264,6 +266,9 @@ class _ProviderSearchViewState extends State<_ProviderSearchView> {
     final cubit = context.read<ProviderSearchCubit>();
     return showModalBottomSheet<void>(
       context: context,
+      // No navigator raiz: o menu inferior do shell desenha por cima do
+      // navigator do ramo e taparia o botão "Solicitar".
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => ProviderDetailsSheet(

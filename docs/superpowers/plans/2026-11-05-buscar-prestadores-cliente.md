@@ -24,7 +24,8 @@
 - Categoria sem prestadores (lista vazia) ⇒ mensagem "Sem prestadores por perto…" e botão para outra pesquisa, sem crash.
 - Erro de rede/RPC na procura ⇒ mensagem pt-AO + "Tentar novamente"; a animação não fica presa.
 - Pedido duplicado/prestador indisponível ⇒ mostrar `message` do servidor tal como vem.
-- Consulta com acentos/maiúsculas ("CANALIZADOR", "eletricista" ↔ "Electricista") encontra a categoria.
+- Consulta com acentos/maiúsculas ("CANALIZADOR", "domestica" ↔ "Empregada doméstica") encontra a categoria.
+- O menu inferior do shell desenha por cima do navigator do ramo: o modal abre no navigator raiz e os pins usam `consumeTapEvents` (sem salto de câmara).
 - Interruptor ainda a carregar ⇒ loader (nunca piscar a tela errada).
 
 ---
