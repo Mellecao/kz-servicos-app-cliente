@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Splash nativo (Android < 12): fundo escuro da marca + logo branca centrada.
+     Logo 1541x395 -> 260x67 dp mantém a proporção. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+    <item android:drawable="@color/splash_background" />
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item
+        android:width="260dp"
+        android:height="67dp"
+        android:gravity="center">
         <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:gravity="fill"
+            android:src="@drawable/splash_logo" />
+    </item>
 </layer-list>

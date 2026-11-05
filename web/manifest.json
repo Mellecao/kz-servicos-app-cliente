@@ -1,12 +1,12 @@
 {
-    "name": "KZ Serviços",
-    "short_name": "KZ Serviços",
+    "name": "Só Serviços",
+    "short_name": "Só Serviços",
     "id": "/",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FFFFFF",
-    "theme_color": "#0D5C63",
-    "description": "Solicite viagens e serviços pelo app KZ Serviços.",
+    "background_color": "#16161D",
+    "theme_color": "#FF9A52",
+    "description": "Serviços de apoio ao domicílio. Peça viagens e serviços.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

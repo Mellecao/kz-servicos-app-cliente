@@ -18,19 +18,19 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="KZ Serviços - solicite viagens e serviços com praticidade.">
-  <meta name="theme-color" content="#0D5C63">
+  <meta name="description" content="Solicite viagens e serviços com praticidade.">
+  <meta name="theme-color" content="#16161D">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="KZ Serviços">
+  <meta name="apple-mobile-web-app-title" content="Só Serviços">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>KZ Serviços</title>
+  <title>Só Serviços</title>
   <link rel="manifest" href="manifest.json">
   <script>
     window.gm_authFailure = function() {
@@ -54,7 +54,7 @@
         return;
       }
       var script = document.createElement('script');
-      script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&v=weekly&loading=async';
+      script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&v=weekly&loading=async&language=pt-PT&region=AO';
       script.async = true;
       script.onload = loadFlutter;
       script.onerror = loadFlutter;
