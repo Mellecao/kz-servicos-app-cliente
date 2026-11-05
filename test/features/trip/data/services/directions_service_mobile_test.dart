@@ -50,6 +50,8 @@ void main() {
       expect(requestedUri!.queryParameters['destination'], '30.0,40.0');
       expect(requestedUri!.queryParameters['waypoints'], '15.0,25.0');
       expect(requestedUri!.queryParameters['mode'], 'driving');
+      expect(requestedUri!.queryParameters['language'], 'pt-PT');
+      expect(requestedUri!.queryParameters['region'], 'ao');
       expect(result.points, const [
         LatLng(38.5, -120.2),
         LatLng(40.7, -120.95),

@@ -30,7 +30,7 @@ void main() {
     observations: 'Levar cadeirinha infantil',
   );
 
-  testWidgets('exibe motorista, carro, rota e dados da corrida', (
+  testWidgets('exibe motorista, carro, rota e dados da viagem', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -49,7 +49,7 @@ void main() {
 
     expect(find.text('João da Silva'), findsOneWidget);
     expect(find.textContaining('4,9'), findsOneWidget);
-    expect(find.textContaining('342 corridas'), findsOneWidget);
+    expect(find.textContaining('342 viagens'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Chevrolet Onix'),
       350,
@@ -66,7 +66,7 @@ void main() {
     expect(find.text('Av. Brasil, 450'), findsOneWidget);
     expect(find.text('Aeroporto Internacional'), findsOneWidget);
     expect(find.textContaining('2 passageiros'), findsOneWidget);
-    expect(find.text('Confirmar por R\$ 84,50'), findsOneWidget);
+    expect(find.text('Confirmar por 84,50 Kz'), findsOneWidget);
     expect(find.text('Agora'), findsNothing);
     expect(find.byIcon(Icons.bolt_rounded), findsNothing);
     expect(find.byIcon(Icons.check_rounded), findsNothing);
@@ -95,7 +95,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 900));
 
-    await tester.tap(find.text('Confirmar por R\$ 84,50'));
+    await tester.tap(find.text('Confirmar por 84,50 Kz'));
     await tester.tap(find.text('Recusar'));
 
     expect(accepted, isTrue);

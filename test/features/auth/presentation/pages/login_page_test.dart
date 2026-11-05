@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:kz_servicos_app/core/widgets/brand_backdrop.dart';
+import 'package:kz_servicos_app/core/widgets/brand_logo.dart';
 import 'package:kz_servicos_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_in_with_email.dart';
 import 'package:kz_servicos_app/features/auth/domain/usecases/sign_up_with_email.dart';
@@ -46,14 +48,14 @@ void main() {
       await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Login'), findsOneWidget);
+      expect(find.text('Iniciar sessão'), findsOneWidget);
     });
 
     testWidgets('should display "Cadastre-se" button', (tester) async {
       await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Cadastre-se'), findsOneWidget);
+      expect(find.text('Criar conta'), findsOneWidget);
     });
 
     testWidgets('should have two main action buttons', (tester) async {
@@ -64,11 +66,24 @@ void main() {
       expect(find.byType(OutlinedButton), findsOneWidget);
     });
 
-    testWidgets('should contain background image', (tester) async {
+    testWidgets('should show the Só Serviços logo on a dark backdrop',
+        (tester) async {
       await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(Image), findsOneWidget);
+      final logo = tester.widget<BrandLogo>(find.byType(BrandLogo));
+      expect(logo.onDark, isTrue);
+      expect(find.byType(BrandBackdrop), findsOneWidget);
+    });
+
+    testWidgets('should not use the legacy KZ illustration', (tester) async {
+      await tester.pumpWidget(buildApp());
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final assets = tester
+          .widgetList<Image>(find.byType(Image))
+          .map((image) => (image.image as AssetImage).assetName);
+      expect(assets, isNot(contains('public/assets/bg_login.png')));
     });
 
     testWidgets('should use Stack layout', (tester) async {
@@ -82,20 +97,20 @@ void main() {
       await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('Login'));
+      await tester.tap(find.text('Iniciar sessão'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Acesse sua conta'), findsOneWidget);
+      expect(find.text('Aceda à sua conta'), findsOneWidget);
     });
 
     testWidgets('register button should open bottom sheet', (tester) async {
       await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('Cadastre-se'));
+      await tester.tap(find.text('Criar conta'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Crie sua conta'), findsOneWidget);
+      expect(find.text('Crie a sua conta'), findsOneWidget);
     });
 
     testWidgets('login bottom sheet should have email and password fields',
@@ -103,11 +118,11 @@ void main() {
       await tester.pumpWidget(buildApp());
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('Login'));
+      await tester.tap(find.text('Iniciar sessão'));
       await tester.pumpAndSettle();
 
       expect(find.text('E-mail'), findsOneWidget);
-      expect(find.text('Senha'), findsOneWidget);
+      expect(find.text('Palavra-passe'), findsOneWidget);
     });
   });
 }

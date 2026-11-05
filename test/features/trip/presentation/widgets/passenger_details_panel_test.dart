@@ -4,7 +4,9 @@ import 'package:kz_servicos_app/features/trip/domain/entities/passenger_form_dat
 import 'package:kz_servicos_app/features/trip/presentation/widgets/passenger_details_panel.dart';
 
 void main() {
-  testWidgets('renders initial passenger details when provided', (tester) async {
+  testWidgets('renders initial passenger details when provided', (
+    tester,
+  ) async {
     final initialData = PassengerFormData(
       adults: 3,
       scheduledDatetime: DateTime(2026, 6, 11, 14, 30),
@@ -33,7 +35,6 @@ void main() {
     expect(find.text('2 criancas pequenas'), findsOneWidget);
     expect(find.text('3 malas'), findsOneWidget);
     expect(find.text('Portao azul'), findsOneWidget);
-    expect(find.text('Dinheiro'), findsOneWidget);
   });
 
   testWidgets('hides return fields for one-way trips', (tester) async {

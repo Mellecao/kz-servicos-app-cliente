@@ -32,7 +32,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Motivo (opcional)'), findsOneWidget);
-    await tester.tap(find.text('Cancelar corrida'));
+    await tester.tap(find.text('Cancelar viagem'));
     await tester.pumpAndSettle();
 
     expect(completed, isTrue);
@@ -66,7 +66,7 @@ void main() {
       find.byKey(const Key('cancel_reason_input')),
       '  Mudança de planos  ',
     );
-    await tester.tap(find.text('Cancelar corrida'));
+    await tester.tap(find.text('Cancelar viagem'));
     await tester.pumpAndSettle();
 
     expect(result, 'Mudança de planos');

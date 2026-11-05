@@ -25,8 +25,9 @@ void main() {
     ));
     expect(find.text('João'), findsOneWidget);
     expect(find.text('Onix Prata'), findsOneWidget);
-    expect(find.textContaining('R\$'), findsOneWidget);
-    expect(find.text('12 min até você'), findsOneWidget);
+    expect(find.textContaining('Kz'), findsOneWidget);
+    expect(find.textContaining('R\$'), findsNothing);
+    expect(find.text('12 min de distância'), findsOneWidget);
   });
 
   testWidgets('shows ETA indisponível when etaMinutes is null',

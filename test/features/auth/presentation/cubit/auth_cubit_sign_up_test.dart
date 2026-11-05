@@ -155,7 +155,7 @@ void main() {
         password: '123',
       ),
       expect: () => [
-        const AuthError('A senha deve ter pelo menos 6 caracteres'),
+        const AuthError('A palavra-passe deve ter pelo menos 6 caracteres'),
       ],
     );
 

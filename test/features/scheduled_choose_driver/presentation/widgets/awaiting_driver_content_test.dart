@@ -47,9 +47,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('SOLICITAÇÃO ENVIADA'), findsOneWidget);
-    expect(find.text('Aguardando Motorista Teste'), findsOneWidget);
+    expect(find.text('A aguardar Motorista Teste'), findsOneWidget);
     expect(find.byKey(const Key('advanced-search-radar')), findsOneWidget);
-    expect(find.text('Procurando resposta em tempo real'), findsOneWidget);
+    expect(find.text('A aguardar resposta em tempo real'), findsOneWidget);
     expect(find.text('Toyota Corolla 2024'), findsOneWidget);
     expect(find.text('Rua das Flores, 120'), findsOneWidget);
     expect(find.text('Aeroporto Internacional'), findsOneWidget);

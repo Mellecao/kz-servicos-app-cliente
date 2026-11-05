@@ -45,16 +45,16 @@ void main() {
       expect(TripExecutionStage.toDestination.label, 'A caminho do destino');
     });
 
-    test('waiting_for_return shows Aguardando você', () {
-      expect(TripExecutionStage.waitingForReturn.label, 'Aguardando você');
+    test('waiting_for_return shows A aguardar por si', () {
+      expect(TripExecutionStage.waitingForReturn.label, 'A aguardar por si');
     });
 
     test('returning shows Voltando pro ponto de partida', () {
       expect(TripExecutionStage.returning.label, 'Voltando pro ponto de partida');
     });
 
-    test('finished shows Corrida finalizada', () {
-      expect(TripExecutionStage.finished.label, 'Corrida finalizada');
+    test('finished shows Viagem concluída', () {
+      expect(TripExecutionStage.finished.label, 'Viagem concluída');
     });
   });
 }

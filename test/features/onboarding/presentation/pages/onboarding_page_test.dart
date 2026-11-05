@@ -29,7 +29,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(
-        find.text('Solicitar serviços KZ ficou ainda mais fácil'),
+        find.text('Solicitar serviços ficou ainda mais fácil'),
         findsOneWidget,
       );
     });

@@ -107,6 +107,8 @@ void main() {
         paymentMethod: 'pix',
         isRoundTrip: true,
         returnDatetime: DateTime.utc(2026, 4, 20, 18, 0),
+        returnPickupAddressId: 'addr-return-pickup',
+        returnDropoffAddressId: 'addr-return-dropoff',
         tripType: 'scheduled_quote',
       );
 
@@ -120,6 +122,8 @@ void main() {
       expect(json['luggage_count'], 3);
       expect(json['is_round_trip'], isTrue);
       expect(json['return_datetime'], '2026-04-20T18:00:00.000Z');
+      expect(json['return_pickup_address_id'], 'addr-return-pickup');
+      expect(json['return_dropoff_address_id'], 'addr-return-dropoff');
       expect(json['observations'], 'Test obs');
       expect(json['payment_method'], 'pix');
     });
@@ -139,6 +143,8 @@ void main() {
       expect(json.containsKey('payment_method'), isFalse);
       expect(json['is_round_trip'], isFalse);
       expect(json.containsKey('return_datetime'), isFalse);
+      expect(json.containsKey('return_pickup_address_id'), isFalse);
+      expect(json.containsKey('return_dropoff_address_id'), isFalse);
     });
 
     test('fromJson parses trip response', () {
@@ -166,9 +172,11 @@ void main() {
       expect(model.clientId, 'user-uuid');
       expect(model.passengerCount, 2);
       expect(model.status, 'open');
-      expect(model.scheduledDatetime, DateTime.utc(2026, 4, 20, 11, 30));
+      // 14:30Z -> 15:30 hora de Luanda (UTC+1)
+      expect(model.scheduledDatetime, DateTime.utc(2026, 4, 20, 15, 30));
       expect(model.isRoundTrip, isTrue);
-      expect(model.returnDatetime, DateTime.utc(2026, 4, 20, 15, 0));
+      // 18:00Z -> 19:00 hora de Luanda
+      expect(model.returnDatetime, DateTime.utc(2026, 4, 20, 19, 0));
     });
 
     test('toEntity converts to Trip correctly', () {

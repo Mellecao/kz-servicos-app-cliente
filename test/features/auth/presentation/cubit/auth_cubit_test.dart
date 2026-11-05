@@ -103,7 +103,7 @@ void main() {
       ),
       expect: () => [
         const AuthLoading(),
-        const AuthError('Este aplicativo é exclusivo para clientes'),
+        const AuthError('Esta aplicação é exclusiva para clientes'),
       ],
     );
 
@@ -122,7 +122,7 @@ void main() {
       ),
       expect: () => [
         const AuthLoading(),
-        const AuthError('E-mail ou senha incorretos'),
+        const AuthError('E-mail ou palavra-passe incorretos'),
       ],
     );
 

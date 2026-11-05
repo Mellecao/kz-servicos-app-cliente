@@ -94,8 +94,8 @@ void main() {
 
       final model = ScheduledTripModel.fromJson(json);
 
-      expect(model.origin, 'Endereço desconhecido');
-      expect(model.destination, 'Endereço desconhecido');
+      expect(model.origin, 'Morada desconhecido');
+      expect(model.destination, 'Morada desconhecido');
       expect(model.originLat, 0.0);
       expect(model.originLng, 0.0);
     });

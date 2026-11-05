@@ -32,10 +32,10 @@ void main() {
     );
 
     expect(find.text('PROPOSTAS RECEBIDAS'), findsOneWidget);
-    expect(find.text('Escolha seu motorista'), findsOneWidget);
+    expect(find.text('Escolha o seu motorista'), findsOneWidget);
     expect(find.text('Maria Souza'), findsOneWidget);
     expect(find.text('Toyota Corolla 2024'), findsOneWidget);
-    expect(find.text('R\$ 92,50'), findsOneWidget);
+    expect(find.text('92,50 Kz'), findsOneWidget);
     expect(find.text('Ver perfil completo'), findsOneWidget);
     expect(find.text('Escolher motorista'), findsOneWidget);
   });

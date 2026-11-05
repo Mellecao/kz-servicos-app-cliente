@@ -58,5 +58,43 @@ void main() {
         expect(results.single.matchedSubstrings.single.length, 3);
       },
     );
+
+    test('restricts suggestions to Angola in European Portuguese', () async {
+      Map<String, dynamic>? requestBody;
+      final service = PlacesAutocompleteService(
+        client: MockClient((request) async {
+          requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+          return http.Response(jsonEncode({'suggestions': []}), 200);
+        }),
+      );
+
+      await service.fetchSuggestions(input: 'Talatona');
+
+      expect(requestBody?['includedRegionCodes'], ['ao']);
+      expect(requestBody?['languageCode'], 'pt-PT');
+    });
+
+    test('legacy fallback is also restricted to Angola', () async {
+      Uri? legacyUri;
+      final service = PlacesAutocompleteService(
+        client: MockClient((request) async {
+          if (request.url.host == 'places.googleapis.com') {
+            return http.Response(jsonEncode({'suggestions': []}), 200);
+          }
+          legacyUri = request.url;
+          return http.Response(
+            jsonEncode({'status': 'OK', 'predictions': []}),
+            200,
+          );
+        }),
+      );
+
+      await service.fetchSuggestions(input: 'Maianga');
+
+      expect(legacyUri?.path, '/maps/api/place/autocomplete/json');
+      expect(legacyUri?.queryParameters['components'], 'country:ao');
+      expect(legacyUri?.queryParameters['language'], 'pt-PT');
+      expect(legacyUri?.queryParameters['region'], 'ao');
+    });
   });
 }

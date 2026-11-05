@@ -22,6 +22,7 @@ void main() {
     final mockSignIn = MockSignInWithEmail();
     final mockSignUp = MockSignUpWithEmail();
     final mockRepository = MockAuthRepository();
+    when(() => mockRepository.getCurrentUser()).thenAnswer((_) async => null);
     final authCubit = AuthCubit(
       signInWithEmail: mockSignIn,
       signUpWithEmail: mockSignUp,
@@ -32,7 +33,7 @@ void main() {
       BlocProvider<AuthCubit>.value(
         value: authCubit,
         child: MaterialApp.router(
-          title: 'KZ Serviços',
+          title: 'Só Serviços',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           routerConfig: AppRouter.createRouter(authCubit),
