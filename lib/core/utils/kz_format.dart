@@ -12,3 +12,24 @@ String formatKz(num value) {
   final isNegative = value < 0 && fixed != '0.00';
   return '${isNegative ? '-' : ''}$integer,${parts[1]} Kz';
 }
+
+/// Faixa de preço em Kwanzas: `5.500 – 38.500 Kz`.
+///
+/// Sem centavos quando os dois extremos são inteiros; com centavos nos dois
+/// quando algum deles os tem. Extremos iguais mostram um só valor e o menor
+/// valor vem sempre primeiro.
+String formatKzRange(num min, num max) {
+  final low = min <= max ? min : max;
+  final high = min <= max ? max : min;
+  final wholeNumbers =
+      low == low.roundToDouble() && high == high.roundToDouble();
+  String body(num value) {
+    final formatted = formatKz(value).replaceFirst(' Kz', '');
+    return wholeNumbers
+        ? formatted.replaceFirst(RegExp(r',00$'), '')
+        : formatted;
+  }
+
+  if (low == high) return '${body(low)} Kz';
+  return '${body(low)} – ${body(high)} Kz';
+}

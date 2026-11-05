@@ -36,4 +36,22 @@ void main() {
       expect(formatKz(100), isNot(contains(r'R$')));
     });
   });
+
+  group('formatKzRange', () {
+    test('drops the cents when both ends are whole numbers', () {
+      expect(formatKzRange(5500, 38500), '5.500 – 38.500 Kz');
+    });
+
+    test('keeps the cents when any end has them', () {
+      expect(formatKzRange(5500.5, 38500), '5.500,50 – 38.500,00 Kz');
+    });
+
+    test('shows a single value when both ends are equal', () {
+      expect(formatKzRange(5500, 5500), '5.500 Kz');
+    });
+
+    test('puts the smaller value first', () {
+      expect(formatKzRange(38500, 5500), '5.500 – 38.500 Kz');
+    });
+  });
 }
