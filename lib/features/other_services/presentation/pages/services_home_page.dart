@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:kz_servicos_app/core/constants/app_colors.dart';
 import 'package:kz_servicos_app/core/theme/app_theme.dart';
 import 'package:kz_servicos_app/features/products/presentation/widgets/products_entry_card.dart';
+import 'package:kz_servicos_app/features/provider_search/presentation/cubit/trips_enabled_cubit.dart';
+import 'package:kz_servicos_app/features/provider_search/presentation/widgets/provider_search_entry_card.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_categories_cubit.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_categories_state.dart';
 import 'package:kz_servicos_app/features/other_services/presentation/cubit/service_requests_list_cubit.dart';
@@ -45,6 +47,12 @@ class _ServicesHomePageState extends State<ServicesHomePage> {
                   onTap: () => context.push('/services/new-freeform'),
                 ),
                 const ProductsEntryCard(),
+                BlocBuilder<TripsEnabledCubit, TripsEnabledState>(
+                  builder: (context, state) =>
+                      state == TripsEnabledState.enabled
+                      ? const ProviderSearchEntryCard()
+                      : const SizedBox.shrink(),
+                ),
                 const SizedBox(height: 20),
                 BlocBuilder<ServiceCategoriesCubit, ServiceCategoriesState>(
                   builder: (context, catState) {

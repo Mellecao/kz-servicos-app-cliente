@@ -47,6 +47,9 @@ import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/cu
 import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/pages/awaiting_driver_response_page.dart';
 import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/pages/driver_selection_page.dart';
 import 'package:kz_servicos_app/features/scheduled_choose_driver/presentation/pages/price_offer_review_page.dart';
+import 'package:kz_servicos_app/features/provider_search/presentation/cubit/trips_enabled_cubit.dart';
+import 'package:kz_servicos_app/features/provider_search/presentation/pages/provider_search_page.dart';
+import 'package:kz_servicos_app/routes/home_gate.dart';
 import 'package:kz_servicos_app/routes/persistent_app_shell.dart';
 
 const _publicRoutes = {'/splash', '/login'};
@@ -84,24 +87,34 @@ abstract final class AppRouter {
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) =>
               BlocBuilder<ScheduledTripsCubit, ScheduledTripsState>(
-                builder: (context, tripsState) => PersistentAppShell(
-                  currentIndex: navigationShell.currentIndex,
-                  scheduledCount: tripsState is ScheduledTripsLoaded
-                      ? tripsState.trips.length
-                      : 0,
-                  onSelect: (index) => navigationShell.goBranch(
-                    index,
-                    initialLocation: index == navigationShell.currentIndex,
-                  ),
-                  child: navigationShell,
-                ),
+                builder: (context, tripsState) =>
+                    BlocBuilder<TripsEnabledCubit, TripsEnabledState>(
+                      builder: (context, enabled) => PersistentAppShell(
+                        currentIndex: navigationShell.currentIndex,
+                        scheduledCount: tripsState is ScheduledTripsLoaded
+                            ? tripsState.trips.length
+                            : 0,
+                        tripsEnabled: enabled == TripsEnabledState.enabled,
+                        onSelect: (index) => navigationShell.goBranch(
+                          index,
+                          initialLocation:
+                              index == navigationShell.currentIndex,
+                        ),
+                        child: navigationShell,
+                      ),
+                    ),
               ),
           branches: [
             StatefulShellBranch(
               routes: [
                 GoRoute(
                   path: '/trip',
-                  builder: (context, state) => const TripHomePage(),
+                  // Primeira tela: viagens só com trips_enabled=true; senão
+                  // "Buscar prestadores" (nada de viagens é apagado).
+                  builder: (context, state) => HomeGate(
+                    tripBuilder: (_) => const TripHomePage(),
+                    searchBuilder: (_) => const ProviderSearchPage(),
+                  ),
                 ),
                 GoRoute(
                   path: '/scheduled-choose-driver/select',
@@ -162,6 +175,11 @@ abstract final class AppRouter {
               ],
             ),
           ],
+        ),
+        GoRoute(
+          path: '/provider-search',
+          builder: (context, state) =>
+              const ProviderSearchPage(showBackButton: true),
         ),
         GoRoute(
           path: '/security-settings',
